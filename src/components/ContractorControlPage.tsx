@@ -24,16 +24,19 @@ import {
   HardHat,
   ZoomIn,
   ZoomOut,
-  Maximize2
+  Maximize2,
+  XCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, LineChart, Line, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, AreaChart as ReAreaChart, Area } from 'recharts';
+import SummaryReportPage from './SummaryReportPage';
 
 // --- Types & Data ---
 interface TreeNode {
   id: string;
   label: string;
   icon: any;
+  isAi?: boolean;
   children?: TreeNode[];
 }
 
@@ -47,9 +50,9 @@ const contractorTree: TreeNode = {
       label: '准入阶段',
       icon: ShieldCheck,
       children: [
-        { id: 'c1', label: '承包商信息', icon: FileText },
-        { id: 'c2', label: '人员信息', icon: UserCheck },
-        { id: 'c3', label: '合同信息', icon: FileText },
+        { id: 'c1', label: '承包商信息', icon: FileText, isAi: true },
+        { id: 'c2', label: '人员信息', icon: UserCheck, isAi: true },
+        { id: 'c3', label: '合同信息', icon: FileText, isAi: true },
         { id: 'c4', label: '项目信息', icon: Briefcase },
       ]
     },
@@ -67,8 +70,8 @@ const contractorTree: TreeNode = {
       label: '培训考试阶段',
       icon: BookOpen,
       children: [
-        { id: 'c7', label: '入场三级教育', icon: GraduationCap },
-        { id: 'c8', label: '人员技能考试', icon: FileText },
+        { id: 'c7', label: '入场三级教育', icon: GraduationCap, isAi: true },
+        { id: 'c8', label: '人员技能考试', icon: FileText, isAi: true },
         { id: 'c9', label: '三种人考试', icon: UserCheck },
       ]
     },
@@ -94,8 +97,8 @@ const contractorTree: TreeNode = {
       label: '验收阶段',
       icon: Award,
       children: [
-        { id: 'c13', label: '承包商企业评价', icon: FileText },
-        { id: 'c14', label: '承包商人员评价', icon: UserCheck },
+        { id: 'c13', label: '承包商企业评价', icon: FileText, isAi: true },
+        { id: 'c14', label: '承包商人员评价', icon: UserCheck, isAi: true },
       ]
     }
   ]
@@ -199,6 +202,11 @@ const ContractorControlPage = () => {
   const [selectedContractor, setSelectedContractor] = useState<string>('');
   const [selectedContract, setSelectedContract] = useState<string>('');
   const [highlightedStages, setHighlightedStages] = useState<string[]>([]);
+  const [aiInput, setAiInput] = useState('');
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
+  const [showSummaryModal, setShowSummaryModal] = useState(false);
+  const [showAiDetail, setShowAiDetail] = useState(false);
+  const [currentSummaryData, setCurrentSummaryData] = useState<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const availableContracts = useMemo(() => {
@@ -208,16 +216,81 @@ const ContractorControlPage = () => {
   const handleSearch = () => {
     if (!selectedContract) {
       setHighlightedStages([]);
+      setAiSummary(null);
       return;
     }
     const contract = availableContracts.find(c => c.id === selectedContract);
     if (contract) {
       setHighlightedStages(contract.stages);
+      setAiSummary(`已为您定位到 [${contract.name}]，当前正处于 [${contractorTree.children?.find(s => s.id === contract.stages[contract.stages.length - 1])?.label}] 实施中。`);
     }
   };
 
+  const generateReportData = (contractName: string, contractorName: string, stages: string[]) => {
+    return {
+      contractorName,
+      contractName,
+      completionRate: Math.round((stages.length / 6) * 100),
+      status: stages.length === 6 ? '已归档' : '履约中',
+      startDate: '2024-01-10',
+      endDate: '2024-12-30',
+      complianceScore: 98.5,
+      stages: [
+        { name: '准入阶段', status: stages.includes('admission') ? 'completed' : 'pending', date: '2024-01-15' },
+        { name: '审查阶段', status: stages.includes('review') ? (stages.length > 2 ? 'completed' : 'ongoing') : 'pending', date: '2024-02-02' },
+        { name: '培训考试阶段', status: stages.includes('training') ? (stages.length > 3 ? 'completed' : 'ongoing') : 'pending', date: '2024-02-28' },
+        { name: '开工阶段', status: stages.includes('commencement') ? (stages.length > 4 ? 'completed' : 'ongoing') : 'pending', date: '2024-03-12' },
+        { name: '作业阶段', status: stages.includes('operation') ? (stages.length > 5 ? 'completed' : 'ongoing') : 'pending', date: '2024-03-25' },
+        { name: '验收阶段', status: stages.includes('acceptance') ? 'completed' : (stages.length === 6 ? 'ongoing' : 'pending'), date: '2024-11-20' },
+      ]
+    };
+  };
+
   const handleSummary = () => {
-    alert('📊 正在生成全周期管控汇总报告...');
+    if (selectedContract) {
+      const contract = availableContracts.find(c => c.id === selectedContract);
+      const contractor = contractors.find(c => c.id === selectedContractor);
+      if (contract && contractor) {
+        setCurrentSummaryData(generateReportData(contract.name, contractor.name, contract.stages));
+        setShowSummaryModal(true);
+      }
+    } else {
+      alert('请先选择一个合同以生成报告');
+    }
+  };
+
+  const handleAiAction = () => {
+    if (!aiInput.trim()) return;
+
+    // Simulate AI parsing
+    let matchFound = false;
+    
+    // Look for keywords
+    Object.entries(contractData).forEach(([cId, contractsList]) => {
+      contractsList.forEach(ct => {
+        const contractor = contractors.find(c => c.id === cId);
+        if (aiInput.includes(ct.name) || (contractor && aiInput.includes(contractor.name))) {
+          matchFound = true;
+          setSelectedContractor(cId);
+          setSelectedContract(ct.id);
+          setHighlightedStages(ct.stages);
+
+          if (aiInput.includes('查看') || aiInput.includes('信息')) {
+            setCurrentSummaryData(generateReportData(ct.name, contractor?.name || '', ct.stages));
+            setShowSummaryModal(true);
+            setAiSummary(null);
+          } else {
+            setAiSummary(`智能分析：[${ct.name}] 履约平稳，目前处于 ${contractorTree.children?.find(s => s.id === ct.stages[ct.stages.length - 1])?.label} 阶段，各项指标均正常。`);
+          }
+        }
+      });
+    });
+
+    if (!matchFound) {
+      setAiSummary("未找到相关合同或承包商，请核对输入信息。");
+    }
+    
+    setAiInput('');
   };
 
   const handleZoomIn = () => setScale(prev => Math.min(prev + 0.1, 2));
@@ -410,6 +483,33 @@ const ContractorControlPage = () => {
             className="flex-1 relative overflow-hidden bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-[size:40px_40px] cursor-grab active:cursor-grabbing"
             id="canvas-container"
           >
+            {/* AI Summary Bubble Overlay */}
+            <AnimatePresence>
+              {aiSummary && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 30, x: '-50%' }}
+                  animate={{ opacity: 1, y: 0, x: '-50%' }}
+                  exit={{ opacity: 0, y: 30, x: '-50%' }}
+                  className="absolute bottom-24 left-1/2 z-[45] bg-white/90 backdrop-blur-xl border border-indigo-100 p-4 rounded-2xl shadow-2xl shadow-indigo-500/10 flex items-center space-x-4 max-w-2xl w-full mx-auto ring-4 ring-white/50"
+                >
+                  <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white shrink-0">
+                    <Sparkles className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-black text-slate-800 leading-tight">
+                      {aiSummary}
+                    </p>
+                  </div>
+                  <button 
+                    onClick={() => setAiSummary(null)}
+                    className="p-1 hover:bg-slate-100 rounded-lg text-slate-400"
+                  >
+                    <XCircle className="w-4 h-4" />
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <motion.div 
               className="absolute inset-0 origin-center"
               initial={{ scale: 0.8, x: -150 }}
@@ -486,6 +586,23 @@ const ContractorControlPage = () => {
                               </div>
                             )}
                           </div>
+                          
+                          {/* AI Feature Icon */}
+                          {node.isAi && (
+                            <motion.button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowAiDetail(true);
+                              }}
+                              whileHover={{ scale: 1.2, rotate: 12 }}
+                              className="w-7 h-7 rounded-lg bg-gradient-to-tr from-violet-500 via-indigo-500 to-cyan-400 p-[1.5px] shadow-lg shadow-indigo-500/30 flex items-center justify-center shrink-0 ml-auto group/ai"
+                            >
+                              <div className="w-full h-full bg-white rounded-[6px] flex items-center justify-center">
+                                <Sparkles className="w-3.5 h-3.5 text-indigo-500 group-hover/ai:text-indigo-600 transition-colors" />
+                              </div>
+                            </motion.button>
+                          )}
+
                           {node.children && (
                             <div className={`absolute -right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm animate-pulse ${node.level === 0 ? 'bg-blue-400' : (isHighlighted ? 'bg-indigo-600 scale-125' : 'bg-indigo-500')}`} />
                           )}
@@ -625,15 +742,21 @@ const ContractorControlPage = () => {
               </div>
               <input 
                 type="text" 
-                placeholder={activeTab === 'analysis' ? "咨询关于指标异常的AI分析结论..." : "键入您的承包商管控指令..."}
-                className="flex-1 bg-transparent border-none outline-none text-sm text-gray-600 placeholder:text-gray-400 font-medium"
+                value={aiInput}
+                onChange={(e) => setAiInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAiAction()}
+                placeholder={activeTab === 'analysis' ? "咨询关于指标异常的AI分析结论..." : "输入“查看XXX合同信息”或“XXX项目进展”..."}
+                className="flex-1 bg-transparent border-none outline-none text-sm text-gray-600 placeholder:text-gray-400 font-bold"
               />
               <div className="flex items-center space-x-2 text-gray-400 pr-2">
                 <button className="p-2 hover:bg-gray-50 rounded-xl transition-all cursor-pointer group">
                   <Mic className="w-5 h-5 group-hover:text-cyan-500" />
                 </button>
                 <div className="h-6 w-[1px] bg-gray-100 mx-1" />
-                <button className="p-2 hover:bg-indigo-50 rounded-xl transition-all cursor-pointer group">
+                <button 
+                  onClick={handleAiAction}
+                  className="p-2 hover:bg-indigo-50 rounded-xl transition-all cursor-pointer group"
+                >
                   <Send className="w-5 h-5 group-hover:text-indigo-600" />
                 </button>
               </div>
@@ -641,6 +764,61 @@ const ContractorControlPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Summary Report Modal */}
+      <AnimatePresence>
+        {showSummaryModal && (
+          <SummaryReportPage 
+            data={currentSummaryData} 
+            onClose={() => setShowSummaryModal(false)} 
+          />
+        )}
+      </AnimatePresence>
+
+      {/* AI Feature Detail Mock Modal */}
+      <AnimatePresence>
+        {showAiDetail && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-6"
+            onClick={() => setShowAiDetail(false)}
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="bg-white/90 w-full max-w-2xl h-[60vh] rounded-[48px] shadow-2xl flex flex-col items-center justify-center p-12 text-center overflow-hidden relative"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-violet-500 via-indigo-500 to-cyan-400" />
+              <div className="w-24 h-24 rounded-3xl bg-indigo-50 flex items-center justify-center text-indigo-600 mb-8 relative">
+                <Sparkles className="w-12 h-12" />
+                <div className="absolute inset-0 bg-indigo-400/20 blur-2xl rounded-full" />
+              </div>
+              <h2 className="text-3xl font-black text-slate-800 mb-4 font-sans tracking-tight">AI 智能赋能专区</h2>
+              <p className="text-slate-500 font-medium max-w-md mx-auto leading-relaxed">
+                正在加载 AI 核心算法库...<br />
+                该功能节点已深度集成多模态大模型，支持自动审核、智能对标与风险预测。
+              </p>
+              
+              <div className="mt-12 flex space-x-3">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="w-2 h-2 rounded-full bg-indigo-200 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
+                ))}
+              </div>
+
+              <button 
+                onClick={() => setShowAiDetail(false)}
+                className="absolute top-8 right-8 p-3 hover:bg-slate-100 rounded-full transition-colors"
+                id="close-ai-modal"
+              >
+                <XCircle className="w-6 h-6 text-slate-300" />
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

@@ -75,12 +75,13 @@ const ConnectorLine = ({
 
 const ContractorFlowView = ({ scale = 1 }: { scale?: number }) => {
   return (
-    <div className="w-full h-full bg-[#f8fbff] overflow-hidden p-4 custom-scrollbar relative">
+    <div className="w-full h-full bg-[#f8fbff] overflow-hidden p-4 relative cursor-grab active:cursor-grabbing">
       <motion.div 
         drag
         dragMomentum={false}
         animate={{ scale }}
         className="origin-top-left"
+        id="flow-view-canvas"
       >
         <div className="min-w-[2200px] flex flex-col relative bg-white rounded-3xl border border-blue-100/50 shadow-sm overflow-hidden">
         {/* Header Stages */}

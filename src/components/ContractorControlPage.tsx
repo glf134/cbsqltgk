@@ -1,4 +1,5 @@
 import React, { useState, useRef, useMemo } from 'react';
+import ContractorFlowView from './ContractorFlowView';
 import { 
   LayoutGrid, 
   ClipboardList, 
@@ -25,7 +26,9 @@ import {
   ZoomIn,
   ZoomOut,
   Maximize2,
-  XCircle
+  XCircle,
+  Network,
+  GitFork
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, LineChart, Line, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, AreaChart as ReAreaChart, Area } from 'recharts';
@@ -198,6 +201,7 @@ const AnalysisChartCard = ({ title, children }: { title: string, children: React
 const ContractorControlPage = () => {
   const [scale, setScale] = useState(1);
   const [activeTab, setActiveTab] = useState<'overall' | 'analysis'>('overall');
+  const [viewMode, setViewMode] = useState<'tree' | 'flow'>('tree');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [selectedContractor, setSelectedContractor] = useState<string>('');
   const [selectedContract, setSelectedContract] = useState<string>('');
@@ -394,8 +398,27 @@ const ContractorControlPage = () => {
             )}
           </div>
 
-          {/* Spacer for symmetry balancing */}
-          <div className="w-12 h-12 invisible shrink-0" />
+          {/* Right Area: View Mode Toggle */}
+          {activeTab === 'overall' ? (
+            <div className="flex items-center space-x-1 bg-white/90 backdrop-blur-md border border-slate-200/50 rounded-2xl p-1 shadow-2xl ring-4 ring-white/50 pointer-events-auto ml-auto">
+              <button 
+                onClick={() => setViewMode('tree')}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all ${viewMode === 'tree' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
+              >
+                <Network className="w-4 h-4" />
+                <span className="text-[10px] font-black uppercase tracking-widest hidden lg:inline">结构树</span>
+              </button>
+              <button 
+                onClick={() => setViewMode('flow')}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all ${viewMode === 'flow' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
+              >
+                <GitFork className="w-4 h-4" />
+                <span className="text-[10px] font-black uppercase tracking-widest hidden lg:inline">流程图</span>
+              </button>
+            </div>
+          ) : (
+            <div className="w-12 h-12 invisible shrink-0" />
+          )}
         </div>
 
         {/* Search Row - Toggleable for Overall tab */}
@@ -465,155 +488,171 @@ const ContractorControlPage = () => {
           {/* Interactive Floating Control Stack */}
           <div className="absolute right-10 top-32 z-30 flex flex-col space-y-3">
             <div className="bg-white/90 backdrop-blur-xl border border-indigo-50 rounded-2xl p-2 shadow-2xl flex flex-col space-y-1 ring-1 ring-black/5 items-center">
-              <button onClick={handleZoomIn} className="p-3 bg-white hover:bg-indigo-600 hover:text-white rounded-xl transition-all text-indigo-600 cursor-pointer group shadow-sm">
+              <button 
+                onClick={handleZoomIn} 
+                className="p-3 bg-white hover:bg-indigo-600 hover:text-white rounded-xl transition-all text-indigo-600 cursor-pointer group shadow-sm disabled:opacity-30 disabled:cursor-not-allowed"
+              >
                 <ZoomIn className="w-6 h-6" />
               </button>
-              <button onClick={handleZoomOut} className="p-3 bg-white hover:bg-indigo-600 hover:text-white rounded-xl transition-all text-indigo-600 cursor-pointer group shadow-sm">
+              <button 
+                onClick={handleZoomOut} 
+                className="p-3 bg-white hover:bg-indigo-600 hover:text-white rounded-xl transition-all text-indigo-600 cursor-pointer group shadow-sm disabled:opacity-30 disabled:cursor-not-allowed"
+              >
                 <ZoomOut className="w-6 h-6" />
               </button>
               <div className="h-px w-6 bg-slate-100 my-1" />
-              <button onClick={handleReset} className="p-3 bg-white hover:bg-indigo-600 hover:text-white rounded-xl transition-all text-indigo-600 cursor-pointer group shadow-sm">
+              <button 
+                onClick={handleReset} 
+                className="p-3 bg-white hover:bg-indigo-600 hover:text-white rounded-xl transition-all text-indigo-600 cursor-pointer group shadow-sm disabled:opacity-30 disabled:cursor-not-allowed"
+              >
                 <Maximize2 className="w-6 h-6" />
               </button>
             </div>
           </div>
 
-          <div 
-            ref={containerRef}
-            className="flex-1 relative overflow-hidden bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-[size:40px_40px] cursor-grab active:cursor-grabbing"
-            id="canvas-container"
-          >
-            {/* AI Summary Bubble Overlay */}
-            <AnimatePresence>
-              {aiSummary && (
-                <motion.div 
-                  initial={{ opacity: 0, y: 30, x: '-50%' }}
-                  animate={{ opacity: 1, y: 0, x: '-50%' }}
-                  exit={{ opacity: 0, y: 30, x: '-50%' }}
-                  className="absolute bottom-24 left-1/2 z-[45] bg-white/90 backdrop-blur-xl border border-indigo-100 p-4 rounded-2xl shadow-2xl shadow-indigo-500/10 flex items-center space-x-4 max-w-2xl w-full mx-auto ring-4 ring-white/50"
-                >
-                  <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white shrink-0">
-                    <Sparkles className="w-5 h-5" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-black text-slate-800 leading-tight">
-                      {aiSummary}
-                    </p>
-                  </div>
-                  <button 
-                    onClick={() => setAiSummary(null)}
-                    className="p-1 hover:bg-slate-100 rounded-lg text-slate-400"
-                  >
-                    <XCircle className="w-4 h-4" />
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
 
-            <motion.div 
-              className="absolute inset-0 origin-center"
-              initial={{ scale: 0.8, x: -150 }}
-              animate={{ scale }}
-              drag
-              dragMomentum={false}
-              id="canvas-box"
+          {viewMode === 'tree' ? (
+            <div 
+              ref={containerRef}
+              className="flex-1 relative overflow-hidden bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-[size:40px_40px] cursor-grab active:cursor-grabbing"
+              id="canvas-container"
             >
-              <svg className="w-[3000px] h-[3000px] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 overflow-visible">
-                <g>
-                  {layout.links.map((link, i) => (
-                    <path
-                      key={`link-${i}`}
-                      d={generateBezierPath(link.sx, link.sy, link.tx, link.ty)}
-                      fill="none"
-                      stroke={link.level === 0 ? "#4f46e5" : "#94a3b8"} 
-                      strokeWidth={link.level === 0 ? "3.5" : "2"}
-                      strokeOpacity={link.level === 0 ? "0.6" : "0.3"}
-                      className="transition-all duration-700"
-                    />
-                  ))}
-                </g>
+              {/* AI Summary Bubble Overlay */}
+              <AnimatePresence>
+                {aiSummary && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 30, x: '-50%' }}
+                    animate={{ opacity: 1, y: 0, x: '-50%' }}
+                    exit={{ opacity: 0, y: 30, x: '-50%' }}
+                    className="absolute bottom-24 left-1/2 z-[45] bg-white/90 backdrop-blur-xl border border-indigo-100 p-4 rounded-2xl shadow-2xl shadow-indigo-500/10 flex items-center space-x-4 max-w-2xl w-full mx-auto ring-4 ring-white/50"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white shrink-0">
+                      <Sparkles className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-black text-slate-800 leading-tight">
+                        {aiSummary}
+                      </p>
+                    </div>
+                    <button 
+                      onClick={() => setAiSummary(null)}
+                      className="p-1 hover:bg-slate-100 rounded-lg text-slate-400"
+                    >
+                      <XCircle className="w-4 h-4" />
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
-                <g>
-                  {layout.nodes.map((node) => {
-                    const Icon = node.icon;
-                    // Check if this node or its parent stage is highlighted
-                    const isRoot = node.level === 0;
-                    const isStage = node.level === 1;
-                    const isSubItem = node.level === 2;
-                    
-                    const isHighlighted = isRoot || 
-                                         (isStage && highlightedStages.includes(node.id)) ||
-                                         (isSubItem && highlightedStages.some(sid => contractorTree.children?.find(s => s.id === sid)?.children?.some(c => c.id === node.id)));
+              <motion.div 
+                className="absolute inset-0 origin-center"
+                initial={{ scale: 0.8, x: -150 }}
+                animate={{ scale }}
+                drag
+                dragMomentum={false}
+                id="canvas-box"
+              >
+                <svg className="w-[3000px] h-[3000px] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 overflow-visible">
+                  <g>
+                    {layout.links.map((link, i) => (
+                      <path
+                        key={`link-${i}`}
+                        d={generateBezierPath(link.sx, link.sy, link.tx, link.ty)}
+                        fill="none"
+                        stroke={link.level === 0 ? "#4f46e5" : "#94a3b8"} 
+                        strokeWidth={link.level === 0 ? "3.5" : "2"}
+                        strokeOpacity={link.level === 0 ? "0.6" : "0.3"}
+                        className="transition-all duration-700"
+                      />
+                    ))}
+                  </g>
 
-                    const hasSearch = highlightedStages.length > 0;
-                    const dimStyle = hasSearch && !isHighlighted ? 'opacity-30 grayscale-[0.5]' : 'opacity-100';
+                  <g>
+                    {layout.nodes.map((node) => {
+                      const Icon = node.icon;
+                      // Check if this node or its parent stage is highlighted
+                      const isRoot = node.level === 0;
+                      const isStage = node.level === 1;
+                      const isSubItem = node.level === 2;
+                      
+                      const isHighlighted = isRoot || 
+                                           (isStage && highlightedStages.includes(node.id)) ||
+                                           (isSubItem && highlightedStages.some(sid => contractorTree.children?.find(s => s.id === sid)?.children?.some(c => c.id === node.id)));
 
-                    return (
-                      <foreignObject
-                        key={node.id}
-                        x={node.x - 20}
-                        y={node.y - 35}
-                        width="300"
-                        height="120"
-                        className="overflow-visible"
-                      >
-                        <motion.div 
-                          onClick={() => handleNodeClick(node.label)}
-                          whileHover={{ scale: 1.05, y: -5, zIndex: 100 }}
-                          whileTap={{ scale: 0.95 }}
-                          className={`flex items-center space-x-5 p-4 rounded-3xl transition-all duration-500 cursor-pointer group relative overflow-visible ${dimStyle} ${
-                            node.level === 0 ? 'bg-indigo-600 text-white shadow-[0_25px_60px_rgba(79,70,229,0.4)] ring-8 ring-indigo-500/10' : 
-                            node.level === 1 ? (isHighlighted ? 'bg-indigo-50 color-indigo-600 border-2 border-indigo-500 shadow-[0_0_30px_rgba(79,70,229,0.2)]' : 'bg-white border-2 border-indigo-100 shadow-xl shadow-indigo-500/5') : 
-                            (isHighlighted ? 'bg-white border border-indigo-600 shadow-lg' : 'bg-white border border-slate-100 hover:border-indigo-400 hover:shadow-2xl hover:shadow-indigo-500/10')
-                          }`}
-                          style={{ width: 'fit-content', minWidth: node.level === 2 ? '160px' : '220px' }}
+                      const hasSearch = highlightedStages.length > 0;
+                      const dimStyle = hasSearch && !isHighlighted ? 'opacity-30 grayscale-[0.5]' : 'opacity-100';
+
+                      return (
+                        <foreignObject
+                          key={node.id}
+                          x={node.x - 20}
+                          y={node.y - 35}
+                          width="300"
+                          height="120"
+                          className="overflow-visible"
                         >
-                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300 ${
-                            node.level === 0 ? 'bg-white/10 backdrop-blur-md' : 
-                            (isHighlighted ? 'bg-indigo-600 text-white shadow-md' : 'bg-indigo-50 text-indigo-500 group-hover:bg-indigo-600 group-hover:text-white shadow-sm')
-                          }`}>
-                            <Icon className={`${node.level === 0 ? 'w-7 h-7' : 'w-5.5 h-5.5'}`} />
-                          </div>
-                          <div className="flex flex-col pr-6">
-                            <span className={`text-[15px] font-black tracking-tight whitespace-nowrap ${node.level === 0 ? 'text-white' : (isHighlighted ? 'text-indigo-700' : 'text-slate-800')}`}>
-                              {node.label}
-                            </span>
-                            {node.level < 2 && (
-                              <div className="flex items-center space-x-1.5 mt-1.5">
-                                <span className={`text-[10px] uppercase font-black tracking-widest px-2 py-0.5 rounded-lg ${node.level === 0 ? 'bg-white/20 text-white' : (isHighlighted ? 'bg-indigo-600 text-white' : 'bg-indigo-50 text-indigo-500')}`}>
-                                  {node.children?.length || 0} SUB-ITEMS
-                                </span>
-                              </div>
+                          <motion.div 
+                            onClick={() => handleNodeClick(node.label)}
+                            whileHover={{ scale: 1.05, y: -5, zIndex: 100 }}
+                            whileTap={{ scale: 0.95 }}
+                            className={`flex items-center space-x-5 p-4 rounded-3xl transition-all duration-500 cursor-pointer group relative overflow-visible ${dimStyle} ${
+                              node.level === 0 ? 'bg-indigo-600 text-white shadow-[0_25px_60px_rgba(79,70,229,0.4)] ring-8 ring-indigo-500/10' : 
+                              node.level === 1 ? (isHighlighted ? 'bg-indigo-50 color-indigo-600 border-2 border-indigo-500 shadow-[0_0_30px_rgba(79,70,229,0.2)]' : 'bg-white border-2 border-indigo-100 shadow-xl shadow-indigo-500/5') : 
+                              (isHighlighted ? 'bg-white border border-indigo-600 shadow-lg' : 'bg-white border border-slate-100 hover:border-indigo-400 hover:shadow-2xl hover:shadow-indigo-500/10')
+                            }`}
+                            style={{ width: 'fit-content', minWidth: node.level === 2 ? '160px' : '220px' }}
+                          >
+                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300 ${
+                              node.level === 0 ? 'bg-white/10 backdrop-blur-md' : 
+                              (isHighlighted ? 'bg-indigo-600 text-white shadow-md' : 'bg-indigo-50 text-indigo-500 group-hover:bg-indigo-600 group-hover:text-white shadow-sm')
+                            }`}>
+                              <Icon className={`${node.level === 0 ? 'w-7 h-7' : 'w-5.5 h-5.5'}`} />
+                            </div>
+                            <div className="flex flex-col pr-6">
+                              <span className={`text-[15px] font-black tracking-tight whitespace-nowrap ${node.level === 0 ? 'text-white' : (isHighlighted ? 'text-indigo-700' : 'text-slate-800')}`}>
+                                {node.label}
+                              </span>
+                              {node.level < 2 && (
+                                <div className="flex items-center space-x-1.5 mt-1.5">
+                                  <span className={`text-[10px] uppercase font-black tracking-widest px-2 py-0.5 rounded-lg ${node.level === 0 ? 'bg-white/20 text-white' : (isHighlighted ? 'bg-indigo-600 text-white' : 'bg-indigo-50 text-indigo-500')}`}>
+                                    {node.children?.length || 0} SUB-ITEMS
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* AI Feature Icon */}
+                            {node.isAi && (
+                              <motion.button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShowAiDetail(true);
+                                }}
+                                whileHover={{ scale: 1.2, rotate: 12 }}
+                                className="w-7 h-7 rounded-lg bg-gradient-to-tr from-violet-500 via-indigo-500 to-cyan-400 p-[1.5px] shadow-lg shadow-indigo-500/30 flex items-center justify-center shrink-0 ml-auto group/ai"
+                              >
+                                <div className="w-full h-full bg-white rounded-[6px] flex items-center justify-center">
+                                  <Sparkles className="w-3.5 h-3.5 text-indigo-500 group-hover/ai:text-indigo-600 transition-colors" />
+                                </div>
+                              </motion.button>
                             )}
-                          </div>
-                          
-                          {/* AI Feature Icon */}
-                          {node.isAi && (
-                            <motion.button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setShowAiDetail(true);
-                              }}
-                              whileHover={{ scale: 1.2, rotate: 12 }}
-                              className="w-7 h-7 rounded-lg bg-gradient-to-tr from-violet-500 via-indigo-500 to-cyan-400 p-[1.5px] shadow-lg shadow-indigo-500/30 flex items-center justify-center shrink-0 ml-auto group/ai"
-                            >
-                              <div className="w-full h-full bg-white rounded-[6px] flex items-center justify-center">
-                                <Sparkles className="w-3.5 h-3.5 text-indigo-500 group-hover/ai:text-indigo-600 transition-colors" />
-                              </div>
-                            </motion.button>
-                          )}
 
-                          {node.children && (
-                            <div className={`absolute -right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm animate-pulse ${node.level === 0 ? 'bg-blue-400' : (isHighlighted ? 'bg-indigo-600 scale-125' : 'bg-indigo-500')}`} />
-                          )}
-                        </motion.div>
-                      </foreignObject>
-                    );
-                  })}
-                </g>
-              </svg>
-            </motion.div>
-          </div>
+                            {node.children && (
+                              <div className={`absolute -right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm animate-pulse ${node.level === 0 ? 'bg-blue-400' : (isHighlighted ? 'bg-indigo-600 scale-125' : 'bg-indigo-500')}`} />
+                            )}
+                          </motion.div>
+                        </foreignObject>
+                      );
+                    })}
+                  </g>
+                </svg>
+              </motion.div>
+            </div>
+          ) : (
+            <div className="flex-1 relative overflow-hidden bg-white">
+              <ContractorFlowView scale={scale} />
+            </div>
+          )}
         </>
       ) : (
         /* Analysis View */

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useMemo } from 'react';
 import ContractorFlowView from './ContractorFlowView';
+import ContractorDashboardView from './ContractorDashboardView';
 import { 
   LayoutGrid, 
   ClipboardList, 
@@ -200,7 +201,7 @@ const AnalysisChartCard = ({ title, children }: { title: string, children: React
 
 const ContractorControlPage = () => {
   const [scale, setScale] = useState(1);
-  const [activeTab, setActiveTab] = useState<'overall' | 'analysis'>('overall');
+  const [activeTab, setActiveTab] = useState<'overall' | 'contractor-overview' | 'analysis'>('overall');
   const [viewMode, setViewMode] = useState<'tree' | 'flow'>('tree');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [selectedContractor, setSelectedContractor] = useState<string>('');
@@ -370,9 +371,16 @@ const ContractorControlPage = () => {
           <div className="absolute left-1/2 -translate-x-1/2 flex items-center bg-white/90 backdrop-blur-md border border-slate-200/50 rounded-full p-1.5 shadow-[0_20px_50px_rgba(0,0,0,0.06)] ring-4 ring-white/50 pointer-events-auto">
             <NavButton 
               icon={LayoutGrid} 
-              label="总览" 
+              label="AI概览" 
               active={activeTab === 'overall'} 
               onClick={() => setActiveTab('overall')}
+            />
+            <div className="w-4" /> 
+            <NavButton 
+              icon={UserCheck} 
+              label="承包商概览" 
+              active={activeTab === 'contractor-overview'} 
+              onClick={() => setActiveTab('contractor-overview')}
             />
             <div className="w-4" /> 
             <NavButton 
@@ -654,6 +662,10 @@ const ContractorControlPage = () => {
             </div>
           )}
         </>
+      ) : activeTab === 'contractor-overview' ? (
+        <div className="flex-1 overflow-hidden pt-28">
+          <ContractorDashboardView />
+        </div>
       ) : (
         /* Analysis View */
         <div className="flex-1 overflow-y-auto px-10 pt-48 pb-32 custom-scrollbar bg-slate-50/30">
@@ -772,37 +784,39 @@ const ContractorControlPage = () => {
       )}
 
       {/* AI Dialogue Box - Bottom Fixed */}
-      <div className="absolute bottom-6 left-10 right-10 flex justify-center pointer-events-none z-30">
-        <div className="w-full max-w-4xl pointer-events-auto">
-          <div className="relative p-[2.5px] rounded-2xl overflow-hidden bg-gradient-to-r from-blue-400 via-indigo-500 via-purple-500 to-pink-500 shadow-2xl shadow-indigo-500/20">
-            <div className="bg-white rounded-2xl h-14 flex items-center px-4 space-x-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500/10 to-indigo-600/10 flex items-center justify-center text-indigo-600 border border-indigo-100/50">
-                <Sparkles className="w-5 h-5" />
-              </div>
-              <input 
-                type="text" 
-                value={aiInput}
-                onChange={(e) => setAiInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleAiAction()}
-                placeholder={activeTab === 'analysis' ? "咨询关于指标异常的AI分析结论..." : "输入“查看XXX合同信息”或“XXX项目进展”..."}
-                className="flex-1 bg-transparent border-none outline-none text-sm text-gray-600 placeholder:text-gray-400 font-bold"
-              />
-              <div className="flex items-center space-x-2 text-gray-400 pr-2">
-                <button className="p-2 hover:bg-gray-50 rounded-xl transition-all cursor-pointer group">
-                  <Mic className="w-5 h-5 group-hover:text-cyan-500" />
-                </button>
-                <div className="h-6 w-[1px] bg-gray-100 mx-1" />
-                <button 
-                  onClick={handleAiAction}
-                  className="p-2 hover:bg-indigo-50 rounded-xl transition-all cursor-pointer group"
-                >
-                  <Send className="w-5 h-5 group-hover:text-indigo-600" />
-                </button>
+      {activeTab !== 'overall' && (
+        <div className="absolute bottom-6 left-10 right-10 flex justify-center pointer-events-none z-30">
+          <div className="w-full max-w-4xl pointer-events-auto">
+            <div className="relative p-[2.5px] rounded-2xl overflow-hidden bg-gradient-to-r from-blue-400 via-indigo-500 via-purple-500 to-pink-500 shadow-2xl shadow-indigo-500/20">
+              <div className="bg-white rounded-2xl h-14 flex items-center px-4 space-x-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500/10 to-indigo-600/10 flex items-center justify-center text-indigo-600 border border-indigo-100/50">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <input 
+                  type="text" 
+                  value={aiInput}
+                  onChange={(e) => setAiInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAiAction()}
+                  placeholder={activeTab === 'analysis' ? "咨询关于指标异常的AI分析结论..." : "输入“查看XXX合同信息”或“XXX项目进展”..."}
+                  className="flex-1 bg-transparent border-none outline-none text-sm text-gray-600 placeholder:text-gray-400 font-bold"
+                />
+                <div className="flex items-center space-x-2 text-gray-400 pr-2">
+                  <button className="p-2 hover:bg-gray-50 rounded-xl transition-all cursor-pointer group">
+                    <Mic className="w-5 h-5 group-hover:text-cyan-500" />
+                  </button>
+                  <div className="h-6 w-[1px] bg-gray-100 mx-1" />
+                  <button 
+                    onClick={handleAiAction}
+                    className="p-2 hover:bg-indigo-50 rounded-xl transition-all cursor-pointer group"
+                  >
+                    <Send className="w-5 h-5 group-hover:text-indigo-600" />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Summary Report Modal */}
       <AnimatePresence>

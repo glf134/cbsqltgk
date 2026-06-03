@@ -43,9 +43,10 @@ interface CategoryItem {
 
 // --- Components ---
 
-const SidebarIcon = ({ icon: Icon, active, onClick }: { icon: any, active?: boolean, onClick: () => void }) => (
+const SidebarIcon = ({ icon: Icon, active, title, onClick }: { icon: any, active?: boolean, title?: string, onClick: () => void }) => (
   <div 
     onClick={onClick}
+    title={title}
     className={`p-2 rounded-xl cursor-pointer transition-all duration-200 ${active ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'text-gray-400 hover:bg-white hover:text-gray-600'}`}
   >
     <Icon className="w-4 h-4" />
@@ -159,12 +160,12 @@ export default function App() {
         </div>
         
         <div className="flex-1 flex flex-col items-center space-y-7">
-          <SidebarIcon icon={Monitor} active={activePrimary === 'monitor'} onClick={() => setActivePrimary('monitor')} />
-          <SidebarIcon icon={ShieldCheck} active={activePrimary === 'shield'} onClick={() => setActivePrimary('shield')} />
-          <SidebarIcon icon={Database} active={activePrimary === 'contractor'} onClick={() => setActivePrimary('contractor')} />
-          <SidebarIcon icon={AreaChart} active={activePrimary === 'chart'} onClick={() => setActivePrimary('chart')} />
-          <SidebarIcon icon={LayoutTemplate} active={activePrimary === 'template'} onClick={() => setActivePrimary('template')} />
-          <SidebarIcon icon={Settings} active={activePrimary === 'settings'} onClick={() => setActivePrimary('settings')} />
+          <SidebarIcon icon={Monitor} active={activePrimary === 'monitor'} title="区域综合态势" onClick={() => setActivePrimary('monitor')} />
+          <SidebarIcon icon={ShieldCheck} active={activePrimary === 'shield'} title="资产管理" onClick={() => setActivePrimary('shield')} />
+          <SidebarIcon icon={Database} active={activePrimary === 'contractor'} title="承包商链条管控" onClick={() => setActivePrimary('contractor')} />
+          <SidebarIcon icon={AreaChart} active={activePrimary === 'chart'} title="全局安全分析" onClick={() => setActivePrimary('chart')} />
+          <SidebarIcon icon={LayoutTemplate} active={activePrimary === 'template'} title="标准安全模板" onClick={() => setActivePrimary('template')} />
+          <SidebarIcon icon={Settings} active={activePrimary === 'settings'} title="系统配置" onClick={() => setActivePrimary('settings')} />
         </div>
         
         <div className="mt-auto space-y-7 flex flex-col items-center">

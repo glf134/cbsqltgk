@@ -9,7 +9,8 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, 
-  Tooltip, Legend, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area
+  Tooltip, Legend, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area,
+  ComposedChart
 } from 'recharts';
 
 // ================= CONSTANTS & TYPES =================
@@ -391,6 +392,252 @@ export default function DiscoveryPage() {
   // Drilled down level viewer modal
   const [drillDownLevel, setDrillDownLevel] = useState<any | null>(null);
 
+  // Selected management safety metric for middle column drilldown analysis
+  const [drilldownManagementMetric, setDrilldownManagementMetric] = useState<string | null>(null);
+  const [managementSearchQuery, setManagementSearchQuery] = useState('');
+  const [managementPlantFilter, setManagementPlantFilter] = useState('all');
+  const [managementRiskFilter, setManagementRiskFilter] = useState('all');
+  const [managementStatusFilter, setManagementStatusFilter] = useState('all');
+
+  // Work tickets for various power plants (for Management Essential Safety drilldown)
+  const managementWorkTickets = useMemo(() => {
+    return [
+      { id: 'NX-WT-20260608-01', plantId: 'ningxian', plantName: '宁县第一热电厂', type: '电电第一种工作票', workContent: '1#制氢副主舱气体 H2 微漏点排查及副密封圈更换', riskLevel: '重大风险', riskColor: 'bg-rose-50 text-rose-700 border-rose-150', signer: '孙明', permitter: '周超', status: '运行中', time: '06-08 08:30 ~ 17:30' },
+      { id: 'NX-WT-20260608-02', plantId: 'ningxian', plantName: '宁县第一热电厂', type: '热机第一种工作票', workContent: '4号机组给水泵密封水冷却器高压水冲洗', riskLevel: '一般风险', riskColor: 'bg-slate-50 text-slate-700 border-slate-150', signer: '孙明', permitter: '郑伟', status: '已终结', time: '06-08 09:00 ~ 15:30' },
+      { id: 'NX-WT-20260608-03', plantId: 'ningxian', plantName: '宁县第一热电厂', type: '一级动火工作票', workContent: '2#氢站汇流排联络管特种氩弧气化焊接', riskLevel: '重大风险', riskColor: 'bg-rose-50 text-rose-700 border-rose-150', signer: '高建国', permitter: '吴勇', status: '审签中', time: '06-08 14:00 ~ 18:00' },
+      
+      { id: 'PL-WT-20260608-01', plantId: 'pingliang', plantName: '平凉发电厂', type: '电气第一种工作票', workContent: '110kV 平正线1124隔离开关底座绝缘子更换', riskLevel: '重大风险', riskColor: 'bg-rose-50 text-rose-700 border-rose-150', signer: '张伟', permitter: '李强', status: '运行中', time: '06-08 06:00 ~ 14:00' },
+      { id: 'PL-WT-20260608-02', plantId: 'pingliang', plantName: '平凉发电厂', type: '热机第一种工作票', workContent: '3号锅炉B磨煤机主轴承高压稀油站管道检修', riskLevel: '较大风险', riskColor: 'bg-amber-50 text-amber-700 border-amber-150', signer: '陈杰', permitter: '王胜', status: '运行中', time: '06-08 08:00 ~ 18:00' },
+      { id: 'PL-WT-20260608-03', plantId: 'pingliang', plantName: '平凉发电厂', type: '受限空间特种工作票', workContent: '2#循环水泵进水前池内部泥沙高压水清理', riskLevel: '重大风险', riskColor: 'bg-rose-50 text-rose-700 border-rose-150', signer: '赵刚', permitter: '刘明', status: '运行中', time: '06-08 08:30 ~ 17:30' },
+      { id: 'PL-WT-20260608-04', plantId: 'pingliang', plantName: '平凉发电厂', type: '二级动火工作票', workContent: '4#锅炉制粉管道落煤斗外部加强筋局部补强焊接', riskLevel: '一般风险', riskColor: 'bg-slate-50 text-slate-700 border-slate-150', signer: '刘新', permitter: '周兵', status: '已终结', time: '06-08 10:00 ~ 16:00' },
+      
+      { id: 'LZ-WT-20260608-01', plantId: 'lanzhou', plantName: '兰州东热电厂', type: '水力第二种工作票', workContent: '2#脱硫塔循环泵B出口电动调节阀控制线路改造', riskLevel: '较大风险', riskColor: 'bg-amber-50 text-amber-700 border-amber-150', signer: '钱磊', permitter: '郭鹏', status: '运行中', time: '06-08 09:00 ~ 17:00' },
+      { id: 'LZ-WT-20260608-02', plantId: 'lanzhou', plantName: '兰州东热电厂', type: '热机第二种工作票', workContent: '5号低压给水加热器抽汽逆止门控制气缸自校检', riskLevel: '一般风险', riskColor: 'bg-slate-50 text-slate-700 border-slate-150', signer: '高峰', permitter: '马涛', status: '已终结', time: '06-08 08:30 ~ 12:00' },
+      { id: 'LZ-WT-20260608-03', plantId: 'lanzhou', plantName: '兰州东热电厂', type: '高处作业特种工作票', workContent: '全厂主蒸汽输送支架5号塔架伸缩缝绝缘层修复', riskLevel: '重大风险', riskColor: 'bg-rose-50 text-rose-700 border-rose-150', signer: '钱磊', permitter: '马涛', status: '审签中', time: '06-08 13:30 ~ 18:00' },
+
+      { id: 'JY-WT-20260608-01', plantId: 'jingyuan', plantName: '靖远热电厂', type: '电气第二种工作票', workContent: '厂用6kV一段母线避雷器及电压互感器预防性试验', riskLevel: '较大风险', riskColor: 'bg-amber-50 text-amber-700 border-amber-150', signer: '王林', permitter: '陈强', status: '已终结', time: '06-08 07:30 ~ 11:30' },
+      { id: 'JY-WT-20260608-02', plantId: 'jingyuan', plantName: '靖远热电厂', type: '热机第一种工作票', workContent: '凝汽器机组循环管网反冲洗隔离门法兰密封更换', riskLevel: '重大风险', riskColor: 'bg-rose-50 text-rose-700 border-rose-150', signer: '胡海', permitter: '徐鹏', status: '运行中', time: '06-08 08:30 ~ 17:30' },
+
+      { id: 'ZN-WT-20260608-01', plantId: 'zhengning', plantName: '正宁发电厂', type: '第一种工作票', workContent: '送粉管道给煤机法兰结合面防漏垫片批量更换', riskLevel: '较大风险', riskColor: 'bg-amber-50 text-amber-700 border-amber-150', signer: '李小文', permitter: '郭华', status: '运行中', time: '06-08 08:30 ~ 17:30' },
+      { id: 'ZN-WT-20260608-02', plantId: 'zhengning', plantName: '正宁发电厂', type: '一级动火工作票', workContent: '5号油罐区泡沫发生器法兰腐蚀点特种切割补焊', riskLevel: '重大风险', riskColor: 'bg-rose-50 text-rose-700 border-rose-150', signer: '王强', permitter: '郭华', status: '运行中', time: '06-08 09:00 ~ 17:00' }
+    ];
+  }, []);
+
+  const filteredManagementTickets = useMemo(() => {
+    return managementWorkTickets.filter(ticket => {
+      // 仅展示重大风险和较大风险
+      const isCriticalRisk = ticket.riskLevel === '重大风险' || ticket.riskLevel === '较大风险';
+      if (!isCriticalRisk) return false;
+
+      const matchesSearch = 
+        ticket.id.toLowerCase().includes(managementSearchQuery.toLowerCase()) ||
+        ticket.workContent.toLowerCase().includes(managementSearchQuery.toLowerCase()) ||
+        ticket.type.toLowerCase().includes(managementSearchQuery.toLowerCase()) ||
+        ticket.signer.toLowerCase().includes(managementSearchQuery.toLowerCase()) ||
+        ticket.permitter.toLowerCase().includes(managementSearchQuery.toLowerCase());
+      
+      const matchesPlant = managementPlantFilter === 'all' || ticket.plantId === managementPlantFilter;
+      const matchesRisk = managementRiskFilter === 'all' || ticket.riskLevel === managementRiskFilter;
+      const matchesStatus = managementStatusFilter === 'all' || ticket.status === managementStatusFilter;
+      
+      return matchesSearch && matchesPlant && matchesRisk && matchesStatus;
+    });
+  }, [managementWorkTickets, managementSearchQuery, managementPlantFilter, managementRiskFilter, managementStatusFilter]);
+
+  const plantMajorRiskTickets = useMemo(() => {
+    return managementWorkTickets.filter(t => 
+      (managementPlantFilter === 'all' || t.plantId === managementPlantFilter) && t.riskLevel === '重大风险'
+    );
+  }, [managementWorkTickets, managementPlantFilter]);
+
+  const plantLargeRiskTickets = useMemo(() => {
+    return managementWorkTickets.filter(t => 
+      (managementPlantFilter === 'all' || t.plantId === managementPlantFilter) && t.riskLevel === '较大风险'
+    );
+  }, [managementWorkTickets, managementPlantFilter]);
+
+  const [violationTimeframe, setViolationTimeframe] = useState<'day' | 'month'>('day');
+
+  const managementRiskData = useMemo(() => {
+    const config: Record<string, {
+      aiViolationText: string;
+      violationsDay: { name: string; 违章数: number; 已整改: number; 整改率: number }[];
+      violationsMonth: { name: string; 违章数: number; 已整改: number; 整改率: number }[];
+      hiddenDangers: {
+        problems: number;
+        rectified: number;
+        shouldRectification: number;
+        ratio: number;
+        barData: { label: string; count: number; maxCount: number; color: string }[];
+      };
+    }> = {
+      all: {
+        aiViolationText: '今日共查处违章 12 起（含管理类 10 项、行为类 2 项），其中厂领导发现查处 3 起，中层管理人员发现查处 7 起，即时整改率 95%。',
+        violationsDay: [
+          { name: '管理违章', 违章数: 12, 已整改: 10, 整改率: 83.3 },
+          { name: '装置违章', 违章数: 8, 已整改: 8, 整改率: 100 },
+          { name: '行为违章', 违章数: 5, 已整改: 4, 整改率: 80 },
+          { name: '承包商违章', 违章数: 10, 已整改: 9, 整改率: 90 },
+        ],
+        violationsMonth: [
+          { name: '管理违章', 违章数: 1200, 已整改: 1050, 整改率: 87.5 },
+          { name: '装置违章', 违章数: 850, 已整改: 810, 整改率: 95.3 },
+          { name: '行为违章', 违章数: 450, 已整改: 410, 整改率: 91.1 },
+          { name: '承包商违章', 违章数: 980, 已整改: 920, 整改率: 93.8 },
+        ],
+        hiddenDangers: {
+          problems: 13843,
+          rectified: 1530,
+          shouldRectification: 2246,
+          ratio: 70,
+          barData: [
+            { label: '一般隐患', count: 4524, maxCount: 5000, color: 'bg-emerald-500' },
+            { label: 'I级较大', count: 200, maxCount: 5000, color: 'bg-indigo-500' },
+            { label: 'II级较大', count: 150, maxCount: 5000, color: 'bg-sky-500' },
+            { label: '重大隐患', count: 50, maxCount: 5000, color: 'bg-rose-500' },
+          ]
+        }
+      },
+      ningxian: {
+        aiViolationText: '今日共查处违章 4 起（含管理类 3 项、行为类 1 项），其中厂领导发现查处 1 起，中层管理人员发现查处 2 起，即时整改率 100%。',
+        violationsDay: [
+          { name: '管理违章', 违章数: 3, 已整改: 3, 整改率: 100 },
+          { name: '装置违章', 违章数: 2, 已整改: 2, 整改率: 100 },
+          { name: '行为违章', 违章数: 1, 已整改: 1, 整改率: 100 },
+          { name: '承包商违章', 违章数: 3, 已整改: 3, 整改率: 100 },
+        ],
+        violationsMonth: [
+          { name: '管理违章', 违章数: 250, 已整改: 210, 整改率: 84 },
+          { name: '装置违章', 违章数: 180, 已整改: 175, 整改率: 97 },
+          { name: '行为违章', 违章数: 90, 已整改: 85, 整改率: 94 },
+          { name: '承包商违章', 违章数: 210, 已整改: 200, 整改率: 95 },
+        ],
+        hiddenDangers: {
+          problems: 2854,
+          rectified: 320,
+          shouldRectification: 480,
+          ratio: 66.7,
+          barData: [
+            { label: '一般隐患', count: 950, maxCount: 1000, color: 'bg-emerald-500' },
+            { label: 'I级较大', count: 40, maxCount: 1000, color: 'bg-indigo-500' },
+            { label: 'II级较大', count: 30, maxCount: 1000, color: 'bg-sky-500' },
+            { label: '重大隐患', count: 10, maxCount: 1000, color: 'bg-rose-500' },
+          ]
+        }
+      },
+      pingliang: {
+        aiViolationText: '今日共查处违章 3 起（含管理类 2 项、行为类 1 项），其中厂领导发现查处 1 起，中层管理人员发现查处 2 起，即时整改率 93%。',
+        violationsDay: [
+          { name: '管理违章', 违章数: 2, 已整改: 2, 整改率: 100 },
+          { name: '装置违章', 违章数: 2, 已整改: 1, 整改率: 50 },
+          { name: '行为违章', 违章数: 1, 已整改: 1, 整改率: 100 },
+          { name: '承包商违章', 违章数: 3, 已整改: 3, 整改率: 100 },
+        ],
+        violationsMonth: [
+          { name: '管理违章', 违章数: 310, 已整改: 280, 整改率: 90 },
+          { name: '装置违章', 违章数: 220, 已整改: 210, 整改率: 95 },
+          { name: '行为违章', 违章数: 120, 已整改: 110, 整改率: 91 },
+          { name: '承包商违章', 违章数: 240, 已整改: 225, 整改率: 93 },
+        ],
+        hiddenDangers: {
+          problems: 3422,
+          rectified: 412,
+          shouldRectification: 588,
+          ratio: 70,
+          barData: [
+            { label: '一般隐患', count: 1150, maxCount: 1200, color: 'bg-emerald-500' },
+            { label: 'I级较大', count: 55, maxCount: 1200, color: 'bg-indigo-500' },
+            { label: 'II级较大', count: 42, maxCount: 1200, color: 'bg-sky-500' },
+            { label: '重大隐患', count: 12, maxCount: 1200, color: 'bg-rose-500' },
+          ]
+        }
+      },
+      lanzhou: {
+        aiViolationText: '今日共查处违章 2 起（含管理类 2 项、行为类 0 项），其中厂领导发现查处 0 起，中层管理人员发现查处 1 起，即时整改率 100%。',
+        violationsDay: [
+          { name: '管理违章', 违章数: 2, 已整改: 2, 整改率: 100 },
+          { name: '装置违章', 违章数: 1, 已整改: 1, 整改率: 100 },
+          { name: '行为违章', 违章数: 0, 已整改: 0, 整改率: 100 },
+          { name: '承包商违章', 违章数: 2, 已整改: 2, 整改率: 100 },
+        ],
+        violationsMonth: [
+          { name: '管理违章', 违章数: 180, 已整改: 160, 整改率: 88.8 },
+          { name: '装置违章', 违章数: 140, 已整改: 135, 整改率: 96.4 },
+          { name: '行为违章', 违章数: 70, 已整改: 62, 整改率: 88.5 },
+          { name: '承包商违章', 违章数: 160, 已整改: 152, 整改率: 95 },
+        ],
+        hiddenDangers: {
+          problems: 2130,
+          rectified: 265,
+          shouldRectification: 348,
+          ratio: 76.1,
+          barData: [
+            { label: '一般隐患', count: 680, maxCount: 800, color: 'bg-emerald-500' },
+            { label: 'I级较大', count: 30, maxCount: 800, color: 'bg-indigo-500' },
+            { label: 'II级较大', count: 22, maxCount: 800, color: 'bg-sky-500' },
+            { label: '重大隐患', count: 8, maxCount: 800, color: 'bg-rose-500' },
+          ]
+        }
+      },
+      jingyuan: {
+        aiViolationText: '今日共查处违章 2 起（含管理类 2 项、行为类 0 项），其中厂领导发现查处 1 起，中层管理人员发现查处 1 起，即时整改率 90%。',
+        violationsDay: [
+          { name: '管理违章', 违章数: 2, 已整改: 1, 整改率: 50 },
+          { name: '装置违章', 违章数: 1, 已整改: 1, 整改率: 100 },
+          { name: '行为违章', 违章数: 1, 已整改: 1, 整改率: 100 },
+          { name: '承包商违章', 违章数: 2, 已整改: 2, 整改率: 100 },
+        ],
+        violationsMonth: [
+          { name: '管理违章', 违章数: 240, 已整改: 200, 整改率: 83.3 },
+          { name: '装置违章', 违章数: 160, 已整改: 145, 整改率: 90.6 },
+          { name: '行为违章', 违章数: 80, 已整改: 72, 整改率: 90 },
+          { name: '承包商违章', 违章数: 190, 已整改: 178, 整改率: 93.6 },
+        ],
+        hiddenDangers: {
+          problems: 2912,
+          rectified: 288,
+          shouldRectification: 430,
+          ratio: 67,
+          barData: [
+            { label: '一般隐患', count: 844, maxCount: 1000, color: 'bg-emerald-500' },
+            { label: 'I级较大', count: 35, maxCount: 1000, color: 'bg-indigo-500' },
+            { label: 'II级较大', count: 26, maxCount: 1000, color: 'bg-sky-500' },
+            { label: '重大隐患', count: 10, maxCount: 1000, color: 'bg-rose-500' },
+          ]
+        }
+      },
+      zhengning: {
+        aiViolationText: '今日共查处违章 1 起（含管理类 1 项、行为类 0 项），其中厂领导发现查处 0 起，中层管理人员发现查处 1 起，即时整改率 100%。',
+        violationsDay: [
+          { name: '管理违章', 违章数: 1, 已整改: 1, 整改率: 100 },
+          { name: '装置违章', 违章数: 1, 已整改: 1, 整改率: 100 },
+          { name: '行为违章', 违章数: 1, 已整改: 1, 整改率: 100 },
+          { name: '承包商违章', 违章数: 1, 已整改: 1, 整改率: 100 },
+        ],
+        violationsMonth: [
+          { name: '管理违章', 违章数: 220, 已整改: 190, 整改率: 86.3 },
+          { name: '装置违章', 违章数: 150, 已整改: 140, 整改率: 93.3 },
+          { name: '行为违章', 违章数: 90, 已整改: 81, 整改率: 90 },
+          { name: '承包商违章', 违章数: 180, 已整改: 165, 整改率: 91.6 },
+        ],
+        hiddenDangers: {
+          problems: 2525,
+          rectified: 245,
+          shouldRectification: 400,
+          ratio: 61.2,
+          barData: [
+            { label: '一般隐患', count: 700, maxCount: 900, color: 'bg-emerald-500' },
+            { label: 'I级较大', count: 40, maxCount: 900, color: 'bg-indigo-500' },
+            { label: 'II级较大', count: 30, maxCount: 900, color: 'bg-sky-500' },
+            { label: '重大隐患', count: 12, maxCount: 900, color: 'bg-rose-500' },
+          ]
+        }
+      }
+    };
+
+    return config[managementPlantFilter] || config.all;
+  }, [managementPlantFilter]);
+
   // Selected personnel safety metric for middle column drilldown analysis
   const [drilldownPersonMetric, setDrilldownPersonMetric] = useState<string | null>(null);
   const [activeMetricInAll, setActiveMetricInAll] = useState<'totalOnDuty' | 'outsourcingCount' | 'workTickets' | 'longTermTeams' | 'shortTermTeams'>('totalOnDuty');
@@ -629,6 +876,32 @@ export default function DiscoveryPage() {
 
   const [violationsPeriod, setViolationsPeriod] = useState<'day' | 'month'>('day');
 
+  const plantsJobsData = useMemo(() => {
+    return [
+      { name: '平凉发电', value: 60 },
+      { name: '兰州热电', value: 42 },
+      { name: '靖远热电', value: 35 },
+      { name: '正宁发电', value: 24 },
+      { name: '连城发电', value: 18 },
+      { name: '西固热电', value: 15 },
+      { name: '甘谷发电', value: 12 },
+      { name: '景泰热电', value: 8 },
+    ].sort((a, b) => b.value - a.value);
+  }, []);
+
+  const plantsAlertsData = useMemo(() => {
+    return [
+      { name: '正宁发电', value: 7 },
+      { name: '平凉发电', value: 5 },
+      { name: '兰州热电', value: 4 },
+      { name: '靖远热电', value: 3 },
+      { name: '连城发电', value: 2 },
+      { name: '西固热电', value: 2 },
+      { name: '甘谷发电', value: 1 },
+      { name: '景泰热电', value: 1 },
+    ].sort((a, b) => b.value - a.value);
+  }, []);
+
   const violationsChartData = useMemo(() => {
     const isAll = currentPlantId === 'all';
     const isNing = currentPlantId === 'ningxian';
@@ -784,7 +1057,7 @@ export default function DiscoveryPage() {
               <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-3" id="human-essential-card">
                 <h3 className="text-xs font-black text-slate-900 tracking-wider flex items-center justify-between border-b border-slate-100 pb-2">
                   <div 
-                    onClick={() => setDrilldownPersonMetric('all_personnel')}
+                    onClick={() => { setDrilldownPersonMetric('all_personnel'); setDrilldownManagementMetric(null); setDrilldownDeviceMetric(null); }}
                     className="flex items-center cursor-pointer hover:text-indigo-600 transition-colors group"
                     title="点击查看人员本质安全综合大底座穿透视图"
                   >
@@ -803,7 +1076,7 @@ export default function DiscoveryPage() {
                 </h3>
                 
                 <div 
-                  onClick={() => setDrilldownPersonMetric('totalOnDuty')}
+                  onClick={() => { setDrilldownPersonMetric('totalOnDuty'); setDrilldownManagementMetric(null); setDrilldownDeviceMetric(null); }}
                   className={`flex items-center justify-between p-2 rounded-xl transition-all border cursor-pointer group ${drilldownPersonMetric === 'totalOnDuty' ? 'bg-indigo-50/50 border-indigo-200 shadow-3xs ring-1 ring-indigo-100' : 'bg-slate-50/50 border-slate-100/70 hover:bg-indigo-50/30 hover:border-indigo-150'}`}
                 >
                   <div className="space-y-0.5">
@@ -823,7 +1096,7 @@ export default function DiscoveryPage() {
 
                 <div className="grid grid-cols-2 gap-2 text-xs pt-1">
                   <div 
-                    onClick={() => setDrilldownPersonMetric('outsourcingCount')}
+                    onClick={() => { setDrilldownPersonMetric('outsourcingCount'); setDrilldownManagementMetric(null); setDrilldownDeviceMetric(null); }}
                     className={`p-2 rounded-xl border transition-all cursor-pointer group flex flex-col justify-between h-13.5 ${drilldownPersonMetric === 'outsourcingCount' ? 'bg-indigo-50/50 border-indigo-200 shadow-3xs ring-1 ring-indigo-100' : 'bg-slate-50 border-slate-100/60 hover:bg-indigo-50/20 hover:border-indigo-150/70'}`}
                   >
                     <span className="text-[9px] text-slate-400 font-bold block group-hover:text-indigo-500 transition-colors">
@@ -833,7 +1106,7 @@ export default function DiscoveryPage() {
                   </div>
                   
                   <div 
-                    onClick={() => setDrilldownPersonMetric('workTickets')}
+                    onClick={() => { setDrilldownPersonMetric('workTickets'); setDrilldownManagementMetric(null); setDrilldownDeviceMetric(null); }}
                     className={`p-2 rounded-xl border transition-all cursor-pointer group flex flex-col justify-between h-13.5 ${drilldownPersonMetric === 'workTickets' ? 'bg-indigo-50/50 border-indigo-200 shadow-3xs ring-1 ring-indigo-100' : 'bg-slate-50 border-slate-100/60 hover:bg-indigo-50/20 hover:border-indigo-150/70'}`}
                   >
                     <span className="text-[9px] text-slate-400 font-bold block group-hover:text-indigo-500 transition-colors">
@@ -843,7 +1116,7 @@ export default function DiscoveryPage() {
                   </div>
                   
                   <div 
-                    onClick={() => setDrilldownPersonMetric('longTermTeams')}
+                    onClick={() => { setDrilldownPersonMetric('longTermTeams'); setDrilldownManagementMetric(null); setDrilldownDeviceMetric(null); }}
                     className={`p-2 rounded-xl border transition-all cursor-pointer group flex flex-col justify-between h-13.5 ${drilldownPersonMetric === 'longTermTeams' ? 'bg-indigo-50/50 border-indigo-200 shadow-3xs ring-1 ring-indigo-100' : 'bg-slate-50 border-slate-100/60 hover:bg-indigo-50/20 hover:border-indigo-150/70'}`}
                   >
                     <span className="text-[9px] text-slate-400 font-bold block group-hover:text-indigo-500 transition-colors">
@@ -853,7 +1126,7 @@ export default function DiscoveryPage() {
                   </div>
                   
                   <div 
-                    onClick={() => setDrilldownPersonMetric('shortTermTeams')}
+                    onClick={() => { setDrilldownPersonMetric('shortTermTeams'); setDrilldownManagementMetric(null); setDrilldownDeviceMetric(null); }}
                     className={`p-2 rounded-xl border transition-all cursor-pointer group flex flex-col justify-between h-13.5 ${drilldownPersonMetric === 'shortTermTeams' ? 'bg-indigo-50/50 border-indigo-200 shadow-3xs ring-1 ring-indigo-100' : 'bg-slate-50 border-slate-100/60 hover:bg-indigo-50/20 hover:border-indigo-150/70'}`}
                   >
                     <span className="text-[9px] text-slate-400 font-bold block group-hover:text-indigo-500 transition-colors">
@@ -868,7 +1141,7 @@ export default function DiscoveryPage() {
               <div className="bg-white rounded-2xl p-4.5 border border-slate-200/80 shadow-sm space-y-3.5" id="device-essential-card">
                 <h3 className="text-xs font-black text-slate-900 tracking-wider flex items-center justify-between border-b border-slate-100 pb-2">
                   <div 
-                    onClick={() => { setDrilldownDeviceMetric('all_devices'); setDrilldownPersonMetric(null); }}
+                    onClick={() => { setDrilldownDeviceMetric('all_devices'); setDrilldownPersonMetric(null); setDrilldownManagementMetric(null); }}
                     className="flex items-center cursor-pointer hover:text-rose-600 transition-colors group"
                     title="点击查看设备本质安全综合大底座穿透视图"
                   >
@@ -890,7 +1163,7 @@ export default function DiscoveryPage() {
                 <div className="grid grid-cols-3 gap-2">
                   {/* 缺陷总数 */}
                   <div 
-                    onClick={() => { setDrilldownDeviceMetric('totalDefects'); setDrilldownPersonMetric(null); }}
+                    onClick={() => { setDrilldownDeviceMetric('totalDefects'); setDrilldownPersonMetric(null); setDrilldownManagementMetric(null); }}
                     className={`p-2 rounded-xl border transition-all cursor-pointer group flex flex-col items-center justify-between text-center ${drilldownDeviceMetric === 'totalDefects' ? 'bg-rose-50/50 border-rose-250 shadow-3xs ring-1 ring-rose-150' : 'bg-slate-50/80 border-slate-100/75 hover:bg-rose-50/20 hover:border-rose-150/50'}`}
                   >
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1.5 shadow-sm transition-all duration-250 ${drilldownDeviceMetric === 'totalDefects' ? 'bg-rose-200 text-rose-700 scale-105' : 'bg-slate-100 text-slate-500'}`}>
@@ -902,7 +1175,7 @@ export default function DiscoveryPage() {
 
                   {/* 一类重大 */}
                   <div 
-                    onClick={() => { setDrilldownDeviceMetric('majorDefects'); setDrilldownPersonMetric(null); }}
+                    onClick={() => { setDrilldownDeviceMetric('majorDefects'); setDrilldownPersonMetric(null); setDrilldownManagementMetric(null); }}
                     className={`p-2 rounded-xl border transition-all cursor-pointer group flex flex-col items-center justify-between text-center ${drilldownDeviceMetric === 'majorDefects' ? 'bg-rose-50/60 border-rose-250 shadow-3xs ring-1 ring-rose-150' : 'bg-rose-50/40 border-rose-100/50 hover:bg-rose-50/65 hover:border-rose-200'}`}
                   >
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1.5 shadow-sm animate-pulse transition-all duration-250 ${drilldownDeviceMetric === 'majorDefects' ? 'bg-red-200 text-red-700 scale-105' : 'bg-rose-100/60 text-red-600'}`}>
@@ -914,7 +1187,7 @@ export default function DiscoveryPage() {
 
                   {/* 二类缺陷 */}
                   <div 
-                    onClick={() => { setDrilldownDeviceMetric('minorDefects'); setDrilldownPersonMetric(null); }}
+                    onClick={() => { setDrilldownDeviceMetric('minorDefects'); setDrilldownPersonMetric(null); setDrilldownManagementMetric(null); }}
                     className={`p-2 rounded-xl border transition-all cursor-pointer group flex flex-col items-center justify-between text-center ${drilldownDeviceMetric === 'minorDefects' ? 'bg-amber-50 border-amber-200 shadow-3xs ring-1 ring-amber-100' : 'bg-amber-50/30 border-amber-100 hover:bg-amber-50 hover:border-amber-150/70'}`}
                   >
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1.5 shadow-sm transition-all duration-250 ${drilldownDeviceMetric === 'minorDefects' ? 'bg-amber-150 text-amber-700 scale-105' : 'bg-amber-100/60 text-amber-600'}`}>
@@ -929,7 +1202,7 @@ export default function DiscoveryPage() {
                 <div className="grid grid-cols-2 gap-2.5 pt-1.5">
                   {/* 昨日新增 */}
                   <div 
-                    onClick={() => { setDrilldownDeviceMetric('yesterdayNewDefects'); setDrilldownPersonMetric(null); }}
+                    onClick={() => { setDrilldownDeviceMetric('yesterdayNewDefects'); setDrilldownPersonMetric(null); setDrilldownManagementMetric(null); }}
                     className={`p-2.5 rounded-xl border transition-all cursor-pointer group flex items-center space-x-2.5 h-13.5 ${drilldownDeviceMetric === 'yesterdayNewDefects' ? 'bg-sky-50 border-sky-200 shadow-3xs ring-1 ring-sky-100' : 'bg-sky-50/40 border-sky-100/60 hover:bg-sky-50/70 hover:border-sky-150'}`}
                   >
                     <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-xs transition-all duration-250 ${drilldownDeviceMetric === 'yesterdayNewDefects' ? 'bg-sky-200 text-sky-700 scale-105' : 'bg-sky-100/60 text-sky-600'}`}>
@@ -946,7 +1219,7 @@ export default function DiscoveryPage() {
 
                   {/* 消缺率 */}
                   <div 
-                    onClick={() => { setDrilldownDeviceMetric('defectResolutionRate'); setDrilldownPersonMetric(null); }}
+                    onClick={() => { setDrilldownDeviceMetric('defectResolutionRate'); setDrilldownPersonMetric(null); setDrilldownManagementMetric(null); }}
                     className={`p-2.5 rounded-xl border transition-all cursor-pointer group flex items-center space-x-2.5 h-13.5 ${drilldownDeviceMetric === 'defectResolutionRate' ? 'bg-emerald-50 border-emerald-200 shadow-3xs ring-1 ring-emerald-100' : 'bg-emerald-50/40 border-emerald-100/60 hover:bg-emerald-50/70 hover:border-emerald-150'}`}
                   >
                     <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-xs transition-all duration-250 ${drilldownDeviceMetric === 'defectResolutionRate' ? 'bg-emerald-200 text-emerald-700 scale-105' : 'bg-emerald-100/60 text-emerald-600'}`}>
@@ -962,7 +1235,7 @@ export default function DiscoveryPage() {
                 {/* 智能设备占比 */}
                 <div className="space-y-1.5 pt-2 border-t border-slate-100" id="smart-device-ratio">
                   <h4 
-                    onClick={() => { setDrilldownDeviceMetric('all_smart_devices'); setDrilldownPersonMetric(null); }}
+                    onClick={() => { setDrilldownDeviceMetric('all_smart_devices'); setDrilldownPersonMetric(null); setDrilldownManagementMetric(null); }}
                     className={`text-[9.5px] font-black uppercase tracking-wider flex items-center justify-between cursor-pointer transition-colors group/header ${drilldownDeviceMetric === 'all_smart_devices' ? 'text-indigo-600' : 'text-slate-400 hover:text-indigo-600'}`}
                     title="点击查看智能设备本质安全综合全景图"
                   >
@@ -986,7 +1259,7 @@ export default function DiscoveryPage() {
                       return (
                         <div 
                           key={idx} 
-                          onClick={() => { setDrilldownDeviceMetric(metricKey); setDrilldownPersonMetric(null); }}
+                          onClick={() => { setDrilldownDeviceMetric(metricKey); setDrilldownPersonMetric(null); setDrilldownManagementMetric(null); }}
                           className={`space-y-0.5 p-1 rounded-lg transition-all cursor-pointer group/item border ${isSelected ? 'bg-indigo-50/50 border-indigo-200/80 shadow-2xs' : 'border-transparent hover:bg-slate-50'}`}
                         >
                           <div className="flex justify-between text-[10px] font-bold text-slate-600">
@@ -1095,7 +1368,432 @@ export default function DiscoveryPage() {
                   )}
                 </AnimatePresence>
 
-                {drilldownPersonMetric ? (
+                {drilldownManagementMetric ? (
+                  /* ================= REAL-TIME MANAGEMENT WORK TICKETS PORTAL ================= */
+                  <div className="flex flex-col space-y-4 flex-1 relative z-10" id="unified-management-drilldown">
+                    
+                    {/* Header with Back button */}
+                    <div className="flex items-center justify-between border-b border-indigo-100 pb-3" id="drilldown-header-management">
+                      <button 
+                        onClick={() => setDrilldownManagementMetric(null)}
+                        className="flex items-center space-x-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-bold transition-all cursor-pointer border border-indigo-100/50 shadow-2xs"
+                      >
+                        <ArrowLeft className="w-3.5 h-3.5 stroke-[2.5]" />
+                        <span>返回 AI安全生产日报</span>
+                      </button>
+                      
+                      <div className="flex items-center space-x-2">
+                        <span className="px-2 py-0.5 bg-indigo-100 text-indigo-850 rounded-md text-[9px] font-black tracking-wide border border-indigo-200">
+                          管理的本质安全 · 全网作业票穿透云图
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Stats boxes */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5" id="management-kpis-stat-cards">
+                      {[
+                        { label: '总运行作业票', count: managementWorkTickets.length, icon: FileText, colorText: 'text-indigo-600', colorBg: 'bg-indigo-50/50 hover:bg-indigo-50/80 border-indigo-100' },
+                        { label: '当前运行中', count: managementWorkTickets.filter(t => t.status === '运行中').length, icon: Activity, colorText: 'text-emerald-600', colorBg: 'bg-emerald-50/50 hover:bg-emerald-50/80 border-emerald-100' },
+                        { label: '流程审签中', count: managementWorkTickets.filter(t => t.status === '审签中').length, icon: Sliders, colorText: 'text-amber-600', colorBg: 'bg-amber-50/50 hover:bg-amber-50/85 border-amber-100' },
+                        { label: '重大风险票', count: managementWorkTickets.filter(t => t.riskLevel === '重大风险').length, icon: AlertCircle, colorText: 'text-rose-600', colorBg: 'bg-rose-50/50 hover:bg-rose-50/80 border-rose-100' },
+                      ].map((card, cIndex) => (
+                        <div key={cIndex} className={`p-2.5 rounded-xl border flex flex-col justify-between ${card.colorBg} transition-all`}>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] text-slate-500 font-bold">{card.label}</span>
+                            <card.icon className={`w-3.5 h-3.5 ${card.colorText}`} />
+                          </div>
+                          <div className="flex items-baseline mt-2">
+                            <span className={`text-xl font-black ${card.colorText} font-mono`}>{card.count}</span>
+                            <span className="text-[9px] text-slate-400 font-bold ml-1">张</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Power Plant Navigation Tabs (全部 & 各电厂页签) */}
+                    <div className="space-y-2" id="management-plants-tab-navigation">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-black text-slate-700 flex items-center">
+                          <Cpu className="w-3.5 h-3.5 text-indigo-500 mr-1.5" />
+                          甘肃公司下辖并网主体电厂
+                        </span>
+                        <span className="text-[8.5px] text-slate-400 font-bold">
+                          点击页签可联动下方作业票对标数据库
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center space-x-1.5 p-1 bg-slate-100 rounded-xl overflow-x-auto scrollbar-none" id="management-plant-tabs-scroller">
+                        {[
+                          { id: 'all', shortName: '全部电厂', name: '全网' },
+                          { id: 'ningxian', shortName: '宁县厂', name: '宁县热电' },
+                          { id: 'pingliang', shortName: '平凉厂', name: '平凉发电' },
+                          { id: 'lanzhou', shortName: '兰州厂', name: '兰州东热' },
+                          { id: 'jingyuan', shortName: '靖远厂', name: '靖远热电' },
+                          { id: 'zhengning', shortName: '正宁厂', name: '正宁发电' }
+                        ].map((plantTab) => {
+                          const isActive = managementPlantFilter === plantTab.id;
+                          const tCount = managementWorkTickets.filter(t => plantTab.id === 'all' || t.plantId === plantTab.id).length;
+                          return (
+                            <button
+                              key={plantTab.id}
+                              onClick={() => setManagementPlantFilter(plantTab.id)}
+                              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center space-x-1 shrink-0 ${
+                                isActive 
+                                  ? 'bg-indigo-600 text-white shadow-sm' 
+                                  : 'bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 border border-slate-200/60'
+                              }`}
+                            >
+                              <span>{plantTab.shortName}</span>
+                              <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-black ${
+                                isActive ? 'bg-indigo-700 text-white' : 'bg-slate-100 text-slate-500'
+                              }`}>
+                                {tCount}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Risk Indicators Bento Row (违章风险 & 隐患风险 对标可视化板) */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4" id="risk-bento-cards-row">
+                      
+                      {/* Left: 违章风险 Violation Risk */}
+                      <div className="bg-white border border-slate-200/90 rounded-2xl p-4 flex flex-col justify-between hover:shadow-2xs transition-all relative" id="violation-risk-detail-card">
+                        <div className="space-y-3 flex-1 flex flex-col justify-between">
+                          
+                          {/* Banner Header */}
+                          <div className="flex items-center justify-between border-b border-slate-150 pb-1.5 shrink-0">
+                            <div className="flex items-center space-x-2">
+                              {/* Glowing high-tech indicator to mimic decoration */}
+                              <span className="w-1.5 h-3.5 bg-yellow-500 rounded-sm shrink-0" />
+                              <span className="text-xs font-black text-slate-900 flex items-center tracking-wide">
+                                违章风险 (VIOLATION RISK)
+                              </span>
+                            </div>
+                            
+                            {/* Timeframe selector: 日累计/月累计 */}
+                            <div className="flex items-center space-x-1 p-0.5 bg-slate-100/80 rounded-lg border border-slate-250/30" id="violation-timeframe-toggler">
+                              <button
+                                onClick={() => setViolationTimeframe('day')}
+                                className={`px-2 py-0.5 rounded text-[8.5px] font-black transition-all ${
+                                  violationTimeframe === 'day' 
+                                    ? 'bg-white text-indigo-700 shadow-3xs border border-indigo-100' 
+                                    : 'text-slate-500 hover:text-slate-800'
+                                }`}
+                              >
+                                日累计
+                              </button>
+                              <button
+                                onClick={() => setViolationTimeframe('month')}
+                                className={`px-2 py-0.5 rounded text-[8.5px] font-black transition-all ${
+                                  violationTimeframe === 'month' 
+                                    ? 'bg-white text-indigo-700 shadow-3xs border border-indigo-100' 
+                                    : 'text-slate-500 hover:text-slate-800'
+                                }`}
+                              >
+                                月累计
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* AI Copilot Description Box */}
+                          <div className="bg-slate-900 text-slate-100 p-2.5 rounded-xl border border-slate-850 text-[10px] leading-relaxed relative overflow-hidden flex items-start space-x-2 shrink-0 shadow-2xs">
+                            <div className="absolute right-0.5 -bottom-2 opacity-5 font-black font-sans text-3xl select-none uppercase">AI</div>
+                            <div className="mt-0.5 px-1 py-0.1 bg-teal-500 text-slate-950 font-black rounded text-[8.5px] uppercase tracking-wider shrink-0 select-none">Ai</div>
+                            <div>
+                              今日共查处违章 <span className="text-yellow-400 font-extrabold font-mono text-xs">{managementPlantFilter === 'all' ? 12 : managementPlantFilter === 'ningxian' ? 4 : managementPlantFilter === 'pingliang' ? 3 : managementPlantFilter === 'lanzhou' ? 2 : managementPlantFilter === 'jingyuan' ? 2 : 1}</span> 起
+                              （含管理类 <span className="text-yellow-400 font-bold font-mono">{managementPlantFilter === 'all' ? 10 : managementPlantFilter === 'ningxian' ? 3 : managementPlantFilter === 'pingliang' ? 2 : managementPlantFilter === 'lanzhou' ? 2 : managementPlantFilter === 'jingyuan' ? 2 : 1}</span> 项、
+                              行为类 <span className="text-yellow-400 font-bold font-mono">{managementPlantFilter === 'all' ? 2 : managementPlantFilter === 'ningxian' ? 1 : managementPlantFilter === 'pingliang' ? 1 : 0}</span> 项）
+                              ，其中厂领导首创纠偏 <span className="text-yellow-400 font-bold font-mono">{managementPlantFilter === 'all' ? 3 : managementPlantFilter === 'ningxian' ? 1 : managementPlantFilter === 'pingliang' ? 1 : 0}</span> 起
+                              ，中层干部纠偏 <span className="text-yellow-400 font-bold font-mono">{managementPlantFilter === 'all' ? 7 : managementPlantFilter === 'ningxian' ? 2 : managementPlantFilter === 'pingliang' ? 2 : 1}</span> 起
+                              ，即时闭环整改率达到 <span className="text-teal-400 font-extrabold font-mono text-xs">{managementPlantFilter === 'all' ? '95%' : managementPlantFilter === 'ningxian' ? '100%' : managementPlantFilter === 'pingliang' ? '93%' : managementPlantFilter === 'lanzhou' ? '100%' : managementPlantFilter === 'jingyuan' ? '90%' : '100%'}</span>。
+                            </div>
+                          </div>
+
+                          {/* Dual-axis Chart (已整改 | 整改率 | 违章数) */}
+                          <div className="flex-1 flex flex-col justify-end min-h-[165px]" id="violation-dynamic-com-chart">
+                            <ResponsiveContainer width="100%" height={165}>
+                              <ComposedChart 
+                                data={violationTimeframe === 'day' ? managementRiskData.violationsDay : managementRiskData.violationsMonth} 
+                                margin={{ top: 15, right: -5, left: -25, bottom: -5 }}
+                              >
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                <XAxis dataKey="name" tick={{ fontSize: 9.5, fill: '#64748b', fontWeight: 'extrabold' }} axisLine={false} tickLine={false} />
+                                <YAxis yAxisId="left" tick={{ fontSize: 9, fill: '#64748b', fontWeight: 'bold' }} axisLine={false} tickLine={false} />
+                                <YAxis yAxisId="right" orientation="right" domain={[0, 100]} tick={{ fontSize: 9, fill: '#0d9488', fontWeight: 'bold' }} axisLine={false} tickLine={false} unit="%" />
+                                <Tooltip contentStyle={{ fontSize: '10px', borderRadius: '8px', zIndex: 100, border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)' }} />
+                                <Legend verticalAlign="top" height={25} iconType="rect" iconSize={8} wrapperStyle={{ fontSize: '9px', fontWeight: 'bold', paddingBottom: '4px' }} />
+                                <Bar yAxisId="left" name="违章数" dataKey="违章数" fill="#eab308" radius={[3, 3, 0, 0]} barSize={14} />
+                                <Bar yAxisId="left" name="已整改" dataKey="已整改" fill="#0ea5e9" radius={[3, 3, 0, 0]} barSize={14} />
+                                <Line yAxisId="right" name="整改率" dataKey="整改率" stroke="#0d9488" strokeWidth={2.5} dot={{ r: 3, strokeWidth: 1.5, fill: '#fff' }} activeDot={{ r: 5 }} />
+                              </ComposedChart>
+                            </ResponsiveContainer>
+                          </div>
+
+                        </div>
+                      </div>
+
+                      {/* Right: 隐患风险 Hidden Danger Risk */}
+                      <div className="bg-white border border-slate-200/90 rounded-2xl p-4 flex flex-col justify-between hover:shadow-2xs transition-all" id="hidden-danger-detail-card">
+                        <div className="space-y-3.5 flex-1 flex flex-col justify-between">
+                          
+                          {/* Banner Header */}
+                          <div className="flex items-center justify-between border-b border-slate-150 pb-1.5 shrink-0">
+                            <div className="flex items-center space-x-2">
+                              <span className="w-1.5 h-3.5 bg-teal-500 rounded-sm shrink-0" />
+                              <span className="text-xs font-black text-slate-900 flex items-center tracking-wide">
+                                隐患风险 (HAZARD RISK)
+                              </span>
+                            </div>
+                            <span className="text-[8.5px] bg-slate-100 text-slate-550 border border-slate-200 px-1.5 py-0.2 rounded font-extrabold select-none">
+                              实时治理大底座
+                            </span>
+                          </div>
+
+                          {/* Row 1: KPI Statistics widgets */}
+                          <div className="grid grid-cols-4 gap-2 shrink-0" id="hidden-danger-kpi-grid">
+                            
+                            {/* problems */}
+                            <div className="border border-red-200/70 bg-red-50/15 hover:bg-red-50/25 p-2 rounded-xl text-center flex flex-col justify-between transition-all shadow-3xs">
+                              <div className="text-[15px] font-black font-mono text-red-600 tracking-tight">
+                                {managementRiskData.hiddenDangers.problems.toLocaleString()}
+                              </div>
+                              <div className="text-[8.5px] text-slate-550 font-extrabold flex items-center justify-center space-x-0.5 mt-0.5">
+                                <span className="text-slate-500">问题数</span>
+                                <span className="text-[8.5px] text-red-500 select-none">③</span>
+                              </div>
+                            </div>
+
+                            {/* resolved */}
+                            <div className="border border-sky-200/70 bg-sky-50/15 hover:bg-sky-50/25 p-2 rounded-xl text-center flex flex-col justify-between transition-all shadow-3xs">
+                              <div className="text-[15px] font-black font-mono text-sky-600 tracking-tight">
+                                {managementRiskData.hiddenDangers.rectified.toLocaleString()}
+                              </div>
+                              <div className="text-[8.5px] text-slate-550 font-extrabold flex items-center justify-center space-x-0.5 mt-0.5">
+                                <span className="text-slate-500">已整改</span>
+                                <span className="text-[8px] text-sky-500 select-none">✔</span>
+                              </div>
+                            </div>
+
+                            {/* should be resolved */}
+                            <div className="border border-amber-200/70 bg-amber-50/15 hover:bg-amber-50/25 p-2 rounded-xl text-center flex flex-col justify-between transition-all shadow-3xs">
+                              <div className="text-[15px] font-black font-mono text-amber-600 tracking-tight">
+                                {managementRiskData.hiddenDangers.shouldRectification.toLocaleString()}
+                              </div>
+                              <div className="text-[8.5px] text-slate-550 font-extrabold flex items-center justify-center space-x-0.5 mt-0.5">
+                                <span className="text-slate-500">应整改</span>
+                                <span className="text-[8px] text-amber-500 select-none">⚠</span>
+                              </div>
+                            </div>
+
+                            {/* percentage ratio */}
+                            <div className="border border-teal-200/70 bg-teal-50/15 hover:bg-teal-50/25 p-2 rounded-xl text-center flex flex-col justify-between transition-all shadow-3xs">
+                              <div className="text-[15px] font-black font-mono text-teal-600 tracking-tight">
+                                {managementRiskData.hiddenDangers.ratio}%
+                              </div>
+                              <div className="text-[8.5px] text-slate-550 font-extrabold flex items-center justify-center space-x-0.5 mt-0.5">
+                                <span className="text-slate-500">整改率</span>
+                                <span className="text-[8.5px] text-teal-600 select-none">🕒</span>
+                              </div>
+                            </div>
+
+                          </div>
+
+                          {/* Row 2: Level progress list */}
+                          <div className="space-y-3 flex-1 flex flex-col justify-center max-h-[165px]" id="hidden-danger-bars">
+                            {managementRiskData.hiddenDangers.barData.map((danger, index) => {
+                              // Dynamic bar display calculation
+                              const barPct = Math.min(100, Math.max(4, (danger.count / danger.maxCount) * 100));
+                              return (
+                                <div key={index} className="flex items-center text-[10px] font-bold text-slate-700">
+                                  <span className="w-16 text-slate-500 font-extrabold shrink-0">{danger.label}</span>
+                                  <div className="flex-1 bg-slate-100 h-2 rounded-full overflow-hidden mx-2 relative border border-slate-200/30">
+                                    <div 
+                                      className={`h-full rounded-full ${danger.color} transition-all duration-500`} 
+                                      style={{ width: `${barPct}%` }}
+                                    />
+                                  </div>
+                                  <span className="w-11 text-right font-mono font-black text-slate-800 shrink-0">
+                                    {danger.count.toLocaleString()}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                        </div>
+                      </div>
+
+                    </div>
+
+                    {/* Search and Filters Segment */}
+                    <div className="bg-slate-50/50 border border-slate-200/80 p-3 rounded-xl space-y-2.5" id="management-tickets-filterbar">
+                      <div className="flex items-center justify-between border-b border-slate-200/60 pb-1.5">
+                        <span className="text-[10px] font-black text-slate-700 flex items-center">
+                          <Filter className="w-3 h-3 text-indigo-500 mr-1" />
+                          作业详情
+                        </span>
+                        <span className="text-[8px] text-slate-400 font-bold">符合检索条件的记录: {filteredManagementTickets.length} 张</span>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-12 gap-2" id="management-filters-grid">
+                        {/* Search Input */}
+                        <div className="md:col-span-4 relative">
+                          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+                          <input 
+                            type="text"
+                            placeholder="搜索工作内容/票号/负责人..."
+                            value={managementSearchQuery}
+                            onChange={(e) => setManagementSearchQuery(e.target.value)}
+                            className="w-full text-[10px] bg-white border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-slate-800 placeholder-slate-400 font-bold focus:outline-none focus:border-indigo-500 transition-all font-sans"
+                          />
+                          {managementSearchQuery && (
+                            <button 
+                              onClick={() => setManagementSearchQuery('')}
+                              className="absolute right-2 top-2.5 text-slate-400 hover:text-slate-600 font-bold text-xs"
+                            >
+                              &times;
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Plant Filter */}
+                        <div className="md:col-span-3">
+                          <select
+                            value={managementPlantFilter}
+                            onChange={(e) => setManagementPlantFilter(e.target.value)}
+                            className="w-full text-[10px] bg-white border border-slate-200 text-slate-705 font-bold py-2 px-2 rounded-lg cursor-pointer focus:outline-none focus:border-indigo-505"
+                          >
+                            <option value="all">🏢 所有并网电厂</option>
+                            <option value="ningxian">宁县第一热电厂</option>
+                            <option value="pingliang">平凉发电厂</option>
+                            <option value="lanzhou">兰州东热电厂</option>
+                            <option value="jingyuan">靖远热电厂</option>
+                            <option value="zhengning">正宁发电厂</option>
+                          </select>
+                        </div>
+
+                        {/* Risk level filter */}
+                        <div className="md:col-span-2">
+                          <select
+                            value={managementRiskFilter}
+                            onChange={(e) => setManagementRiskFilter(e.target.value)}
+                            className="w-full text-[10px] bg-white border border-slate-200 text-slate-705 font-bold py-2 px-2 rounded-lg cursor-pointer focus:outline-none focus:border-indigo-505"
+                          >
+                            <option value="all">⚠️ 重点风险级别</option>
+                            <option value="重大风险">🔴 重大风险</option>
+                            <option value="较大风险">🟡 较大风险</option>
+                          </select>
+                        </div>
+
+                        {/* Status filter */}
+                        <div className="md:col-span-3">
+                          <select
+                            value={managementStatusFilter}
+                            onChange={(e) => setManagementStatusFilter(e.target.value)}
+                            className="w-full text-[10px] bg-white border border-slate-200 text-slate-705 font-bold py-2 px-2 rounded-lg cursor-pointer focus:outline-none focus:border-indigo-505"
+                          >
+                            <option value="all">⚡ 所有工作票状态</option>
+                            <option value="运行中">运行中 (ACTIVE)</option>
+                            <option value="审签中">审签中 (PENDING)</option>
+                            <option value="已终结">已终结 (CLOSED)</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Work ticket table container */}
+                    <div className="border border-slate-200/80 rounded-xl overflow-hidden bg-white shadow-3xs flex-1 flex flex-col justify-between" id="management-tickets-table-card">
+                      <div className="overflow-x-auto max-h-[285px] custom-scrollbar">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="bg-slate-50 border-b border-slate-150 text-[9.5px] font-black text-slate-505">
+                              <th className="py-2.5 px-3">工作票号 / 电厂</th>
+                              <th className="py-2.5 px-3">票种及具体工作内容</th>
+                              <th className="py-2.5 px-3">风险控制</th>
+                              <th className="py-2.5 px-3">负责人</th>
+                              <th className="py-2.5 px-3">状态</th>
+                              <th className="py-2.5 px-3 select-none text-right">操作</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 text-[10px] font-semibold text-slate-600">
+                            {filteredManagementTickets.length === 0 ? (
+                              <tr>
+                                <td colSpan={6} className="py-8 text-center text-slate-400 font-bold text-xs">
+                                  没有找到符合当前检索条件的工作票
+                                </td>
+                              </tr>
+                            ) : (
+                              filteredManagementTickets.map((ticket) => (
+                                <tr key={ticket.id} className="hover:bg-indigo-50/15 transition-colors group">
+                                  <td className="py-3 px-3">
+                                    <div className="font-mono text-slate-900 font-black mb-0.5">{ticket.id}</div>
+                                    <span className="text-[8.5px] font-bold text-slate-400 block">{ticket.plantName}</span>
+                                  </td>
+                                  <td className="py-3 px-3 max-w-[200px]">
+                                    <span className="px-1.5 py-0.5 text-[8.5px] font-black text-indigo-700 bg-indigo-50 border border-indigo-150 rounded mr-1">
+                                      {ticket.type}
+                                    </span>
+                                    <div className="text-[10px] text-slate-800 font-bold mt-1 line-clamp-1 group-hover:line-clamp-none transition-all" title={ticket.workContent}>
+                                      {ticket.workContent}
+                                    </div>
+                                    <span className="text-[7.5px] text-slate-400 font-mono block mt-0.5 font-bold">{ticket.time}</span>
+                                  </td>
+                                  <td className="py-3 px-3">
+                                    <span className={`px-2 py-0.5 text-[8px] font-black border rounded-md ${ticket.riskColor}`}>
+                                      {ticket.riskLevel}
+                                    </span>
+                                  </td>
+                                  <td className="py-3 px-3">
+                                    <div className="text-[9.5px]">
+                                      <span className="text-slate-400">签发: </span>
+                                      <span className="font-bold text-slate-700">{ticket.signer}</span>
+                                    </div>
+                                    <div className="text-[9.5px] mt-0.5">
+                                      <span className="text-slate-400">许可: </span>
+                                      <span className="font-bold text-slate-700">{ticket.permitter}</span>
+                                    </div>
+                                  </td>
+                                  <td className="py-3 px-3">
+                                    <span className={`px-2 py-0.5 rounded-full text-[8.5px] font-bold ${
+                                      ticket.status === '运行中' ? 'bg-emerald-100 text-emerald-805' :
+                                      ticket.status === '审签中' ? 'bg-amber-100 text-amber-805' :
+                                      'bg-slate-100 text-slate-705'
+                                    }`}>
+                                      {ticket.status}
+                                    </span>
+                                  </td>
+                                  <td className="py-3 px-3 text-right">
+                                    <button
+                                      onClick={() => {
+                                        setToastMessage(`【作业现场视频监督】已启动工作票 [${ticket.id}] 所在区域的边缘分析球机与三维全景AI监管连线：锁定负责人 [${ticket.signer}] 现场规范作业。`);
+                                        setTimeout(() => setToastMessage(null), 5500);
+                                      }}
+                                      className="px-2 py-1 text-[8.5px] bg-white border border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-white hover:border-blue-600 rounded-md font-black transition-all cursor-pointer shadow-3xs"
+                                    >
+                                      作业监管
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Summary alert line inside the work ticket board */}
+                      <div className="p-2 bg-indigo-50/40 border-t border-slate-150 text-[8px] font-mono text-indigo-750 flex items-center justify-between">
+                        <div className="flex items-center">
+                          <span className="w-1.5 h-1.5 bg-indigo-605 rounded-full mr-2" />
+                          <span>各电厂承包商准入机制、作业许可证及标准化作业规范度已 100% 纳入全景安全督办信道。</span>
+                        </div>
+                        <span className="font-bold">PROVINCE BROADCAST ONLINE</span>
+                      </div>
+                    </div>
+
+                  </div>
+                ) : drilldownPersonMetric ? (
                   drilldownPersonMetric === 'all_personnel' ? (
                     /* ================= UNIFIED ALL PERSONNEL PORTAL ================= */
                     <div className="flex flex-col space-y-4 flex-1 relative z-10" id="unified-personnel-drilldown">
@@ -2257,69 +2955,33 @@ export default function DiscoveryPage() {
               {/* COMPOSITE CARD: 管理的本质安全 (WITH REQUIRED SUB-SECTIONS) */}
               <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-5 flex-1 flex flex-col justify-between" id="management-essential-composite-card">
                 
-                {/* 1. 管理的本质安全 */}
-                <div className="space-y-4.5" id="management-sub-section">
-                  <h3 className="text-sm font-bold text-slate-900 tracking-tight flex items-center border-b border-slate-100 pb-2.5">
-                    <span className="w-1.5 h-4 bg-indigo-600 rounded-full mr-2" />
-                    管理的本质安全
-                  </h3>
-
-                  <div className="flex items-center space-x-4 bg-slate-50/50 p-3.5 rounded-2xl border border-slate-100/80">
-                    {/* Left Circular Visual with concentric dashed rotating visual indicator */}
-                    <div className="shrink-0 relative w-24 h-24 rounded-full bg-gradient-to-tr from-indigo-50/60 to-sky-50/60 border border-indigo-100/60 flex flex-col justify-center items-center shadow-inner">
-                      <div className="absolute inset-1 rounded-full border border-dashed border-indigo-300/40 animate-[spin_20s_linear_infinite]" />
-                      <div className="absolute inset-2.5 rounded-full bg-white flex flex-col justify-center items-center shadow-sm">
-                        <div className="flex items-baseline font-mono">
-                          <span className="text-2xl font-black text-slate-900 leading-none">{ext.tasksMetrics.total}</span>
-                          <span className="text-[10px] text-slate-400 font-bold ml-0.5">个</span>
-                        </div>
-                        <span className="text-[10px] text-slate-400 font-bold mt-1 scale-90">任务总数</span>
-                      </div>
-                    </div>
-
-                    {/* Right bullet points - 2 column layout */}
-                    <div className="flex-1 grid grid-cols-2 gap-y-3 gap-x-2 pl-2">
-                      <div className="flex items-center justify-between text-xs">
-                        <div className="flex items-center space-x-1.5">
-                          <span className="w-2 h-2 rounded-full bg-[#06b6d4] shrink-0" />
-                          <span className="font-bold text-slate-500 text-[11px]">下达</span>
-                        </div>
-                        <span className="font-black text-[#01a5cc] text-xs font-mono">{ext.tasksMetrics.issued}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-xs">
-                        <div className="flex items-center space-x-1.5">
-                          <span className="w-2 h-2 rounded-full bg-[#3b82f6] shrink-0" />
-                          <span className="font-bold text-slate-500 text-[11px]">已完成</span>
-                        </div>
-                        <span className="font-black text-[#2563eb] text-xs font-mono">{ext.tasksMetrics.completed}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-xs">
-                        <div className="flex items-center space-x-1.5">
-                          <span className="w-2 h-2 rounded-full bg-[#ef4444] shrink-0" />
-                          <span className="font-bold text-slate-500 text-[11px]">已超期</span>
-                        </div>
-                        <span className="font-black text-[#ef4444] text-xs font-mono">{ext.tasksMetrics.overdue}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-xs">
-                        <div className="flex items-center space-x-1.5">
-                          <span className="w-2 h-2 rounded-full bg-[#f59e0b] shrink-0" />
-                          <span className="font-bold text-slate-500 text-[11px]">执行中</span>
-                        </div>
-                        <span className="font-black text-[#eab308] text-xs font-mono">{ext.tasksMetrics.running}</span>
-                      </div>
-                      <div className="flex items-center justify-between col-span-2 border-t border-slate-100 pt-2 text-xs">
-                        <div className="flex items-center space-x-1.5">
-                          <span className="w-2 h-2 rounded-full bg-[#10b981] shrink-0" />
-                          <span className="font-bold text-slate-500 text-[11px]">超期完成</span>
-                        </div>
-                        <span className="font-black text-[#10b981] text-xs font-mono">{ext.tasksMetrics.overdueDone}</span>
-                      </div>
-                    </div>
+                {/* 1. 管理的本质安全 Header */}
+                <div className="pb-1 flex items-center justify-between" id="management-essential-card-header">
+                  <div 
+                    onClick={() => {
+                      setDrilldownManagementMetric(drilldownManagementMetric ? null : 'workTickets_management');
+                      setDrilldownPersonMetric(null);
+                      setDrilldownDeviceMetric(null);
+                    }}
+                    className={`flex items-center cursor-pointer transition-colors group ${drilldownManagementMetric ? 'text-indigo-600' : 'text-slate-950 hover:text-indigo-650'}`}
+                    title="点击查看管理本质安全及各电厂工作票列表"
+                  >
+                    <span className="w-1.5 h-4.5 bg-indigo-600 rounded-full mr-2.5 group-hover:scale-y-125 transition-transform" />
+                    <span className="text-base font-black underline decoration-dashed decoration-indigo-300 underline-offset-4">管理的本质安全</span>
+                    <span className="ml-1.5 text-[7.5px] px-1 py-0.2 bg-indigo-50 text-indigo-600 rounded font-black font-sans shrink-0 border border-indigo-100/60 transition-all group-hover:bg-indigo-150">全景对标 &raquo;</span>
                   </div>
+                  {drilldownManagementMetric && (
+                    <button 
+                      onClick={() => setDrilldownManagementMetric(null)}
+                      className="text-[9.5px] text-indigo-600 hover:text-indigo-800 font-extrabold cursor-pointer border-b border-dashed border-indigo-500 pb-0.5"
+                    >
+                      返回日报
+                    </button>
+                  )}
                 </div>
 
                 {/* 2. 今日作业 */}
-                <div className="space-y-4 pt-3.5 border-t border-slate-100" id="jobs-sub-section">
+                <div className="space-y-3.5" id="jobs-sub-section">
                   <h3 className="text-sm font-bold text-slate-900 tracking-tight flex items-center">
                     <span className="w-1 h-3.5 bg-amber-500 rounded-full mr-2" />
                     今日作业
@@ -2331,18 +2993,68 @@ export default function DiscoveryPage() {
                       <span className="text-base font-black text-slate-800 font-mono">{ext.todayJobs.total}</span>
                     </div>
                     <div className="bg-rose-50/40 border border-rose-100/60 rounded-xl py-3 px-1.5 flex flex-col justify-center items-center">
-                      <span className="text-[11px] text-rose-500 font-black mb-1">重大风险</span>
+                      <span className="text-[10px] text-rose-500 font-black mb-1">重大风险</span>
                       <span className="text-base font-black text-red-600 font-mono">{ext.todayJobs.major}</span>
                     </div>
                     <div className="bg-amber-50/40 border border-amber-100/60 rounded-xl py-3 px-1.5 flex flex-col justify-center items-center">
-                      <span className="text-[11px] text-amber-600 font-black mb-1">较大风险</span>
+                      <span className="text-[10px] text-amber-600 font-black mb-1">较大风险</span>
                       <span className="text-base font-black text-[#f59e0b] font-mono">{ext.todayJobs.large}</span>
+                    </div>
+                  </div>
+
+                  {/* Horizontal Bar Chart for Today's Jobs by Power Plants (Sorted descending) */}
+                  <div className="space-y-1.5 pt-1 border-t border-slate-50">
+                    <div className="text-[10px] text-slate-400 font-bold flex items-center justify-between">
+                      <span>各电厂作业数排名 (倒序)</span>
+                      <span className="text-amber-600 font-mono">（项）</span>
+                    </div>
+                    <div className="h-[140px] w-full pt-1">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={plantsJobsData}
+                          layout="vertical"
+                          margin={{ top: 0, right: 12, left: -25, bottom: 0 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} vertical={true} />
+                          <XAxis 
+                            type="number" 
+                            tick={{ fill: '#64748b', fontSize: 7.5, fontWeight: 600 }} 
+                            axisLine={false} 
+                            tickLine={false} 
+                          />
+                          <YAxis 
+                            type="category" 
+                            dataKey="name" 
+                            tick={{ fill: '#475569', fontSize: 8.5, fontWeight: 700 }} 
+                            axisLine={false} 
+                            tickLine={false} 
+                            width={55}
+                          />
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: '#ffffff',
+                              borderColor: '#e2e8f0',
+                              borderRadius: '8px',
+                              fontSize: 9.5,
+                              fontWeight: 650,
+                              boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)'
+                            }}
+                            labelStyle={{ color: '#0f172a', fontWeight: 'bold' }}
+                          />
+                          <Bar 
+                            dataKey="value" 
+                            radius={[0, 4, 4, 0]} 
+                            barSize={8}
+                            fill="#f59e0b"
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
                     </div>
                   </div>
                 </div>
 
                 {/* 3. 智能预警 */}
-                <div className="space-y-4 pt-3.5 border-t border-slate-100" id="alerts-sub-section">
+                <div className="space-y-3.5 pt-3.5 border-t border-slate-100" id="alerts-sub-section">
                   <h3 className="text-sm font-bold text-slate-900 tracking-tight flex items-center">
                     <span className="w-1 h-3.5 bg-violet-600 rounded-full mr-2" />
                     智能预警
@@ -2350,16 +3062,66 @@ export default function DiscoveryPage() {
 
                   <div className="grid grid-cols-3 gap-2.5 text-center text-xs">
                     <div className="bg-slate-50/60 border border-slate-100 rounded-xl py-3 px-1.5 flex flex-col justify-center items-center">
-                      <span className="text-[11px] text-slate-400 font-bold mb-1">人员行为</span>
+                      <span className="text-[10px] text-slate-400 font-bold mb-1">人员行为</span>
                       <span className="text-base font-black text-[#ef4444] font-mono">{ext.smartAlerts.behavior}</span>
                     </div>
                     <div className="bg-slate-50/60 border border-slate-100 rounded-xl py-3 px-1.5 flex flex-col justify-center items-center">
-                      <span className="text-[11px] text-slate-400 font-bold mb-1">设备本体</span>
+                      <span className="text-[10px] text-slate-400 font-bold mb-1">设备本体</span>
                       <span className="text-base font-black text-slate-800 font-mono">{ext.smartAlerts.equipment}</span>
                     </div>
                     <div className="bg-slate-50/60 border border-slate-100 rounded-xl py-3 px-1.5 flex flex-col justify-center items-center">
-                      <span className="text-[11px] text-slate-400 font-bold mb-1">作业环境</span>
+                      <span className="text-[10px] text-slate-400 font-bold mb-1">作业环境</span>
                       <span className="text-base font-black text-slate-800 font-mono">{ext.smartAlerts.environment}</span>
+                    </div>
+                  </div>
+
+                  {/* Horizontal Bar Chart for Smart Alerts by Power Plants (Sorted descending) */}
+                  <div className="space-y-1.5 pt-1 border-t border-slate-50">
+                    <div className="text-[10px] text-slate-400 font-bold flex items-center justify-between">
+                      <span>各电厂智能预警排名 (倒序)</span>
+                      <span className="text-violet-600 font-mono">（次）</span>
+                    </div>
+                    <div className="h-[140px] w-full pt-1">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={plantsAlertsData}
+                          layout="vertical"
+                          margin={{ top: 0, right: 12, left: -25, bottom: 0 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} vertical={true} />
+                          <XAxis 
+                            type="number" 
+                            tick={{ fill: '#64748b', fontSize: 7.5, fontWeight: 600 }} 
+                            axisLine={false} 
+                            tickLine={false} 
+                          />
+                          <YAxis 
+                            type="category" 
+                            dataKey="name" 
+                            tick={{ fill: '#475569', fontSize: 8.5, fontWeight: 700 }} 
+                            axisLine={false} 
+                            tickLine={false} 
+                            width={55}
+                          />
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: '#ffffff',
+                              borderColor: '#e2e8f0',
+                              borderRadius: '8px',
+                              fontSize: 9.5,
+                              fontWeight: 650,
+                              boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)'
+                            }}
+                            labelStyle={{ color: '#0f172a', fontWeight: 'bold' }}
+                          />
+                          <Bar 
+                            dataKey="value" 
+                            radius={[0, 4, 4, 0]} 
+                            barSize={8}
+                            fill="#8b5cf6"
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
                     </div>
                   </div>
                 </div>

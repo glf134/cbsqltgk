@@ -12,6 +12,8 @@ import {
   Tooltip, Legend, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area,
   ComposedChart
 } from 'recharts';
+import { WorkSupervisionDetail } from './WorkSupervisionDetail';
+import { TotalJobsSupervision } from './TotalJobsSupervision';
 
 // ================= CONSTANTS & TYPES =================
 interface PowerPlantData {
@@ -394,6 +396,7 @@ export default function DiscoveryPage() {
 
   // Selected management safety metric for middle column drilldown analysis
   const [drilldownManagementMetric, setDrilldownManagementMetric] = useState<string | null>(null);
+  const [selectedSupervisionTicket, setSelectedSupervisionTicket] = useState<any | null>(null);
   const [managementSearchQuery, setManagementSearchQuery] = useState('');
   const [managementPlantFilter, setManagementPlantFilter] = useState('all');
   const [managementRiskFilter, setManagementRiskFilter] = useState('all');
@@ -1053,9 +1056,14 @@ export default function DiscoveryPage() {
             {/* ================= LEFT COLUMN: 人的、设备的、环境的本质安全 (xl:col-span-3) ================= */}
             <div className="xl:col-span-3 h-full overflow-y-auto space-y-4 pr-1 scrollbar-thin pb-6" id="left-metrics-column">
               
-              {/* 1. 人的本质安全 */}
-              <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-3" id="human-essential-card">
-                <h3 className="text-xs font-black text-slate-900 tracking-wider flex items-center justify-between border-b border-slate-100 pb-2">
+              {/* 统一的五防本质安全综合管控卡片 */}
+              <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm flex flex-col overflow-hidden animate-fade-in" id="intrinsic-safety-composite-card">
+
+                <div className="p-4 space-y-5 divide-y divide-slate-100/80" id="intrinsic-safety-card-body">
+                  
+                  {/* SECTION 1: 人的本质安全 */}
+                  <div className="space-y-3 pb-1" id="human-essential-section">
+                    <h3 className="text-xs font-black text-slate-900 tracking-wider flex items-center justify-between border-b border-slate-100 pb-2">
                   <div 
                     onClick={() => { setDrilldownPersonMetric('all_personnel'); setDrilldownManagementMetric(null); setDrilldownDeviceMetric(null); }}
                     className="flex items-center cursor-pointer hover:text-indigo-600 transition-colors group"
@@ -1137,8 +1145,8 @@ export default function DiscoveryPage() {
                 </div>
               </div>
 
-              {/* 2. 设备的本质安全 */}
-              <div className="bg-white rounded-2xl p-4.5 border border-slate-200/80 shadow-sm space-y-3.5" id="device-essential-card">
+              {/* SECTION 2: 设备的本质安全 */}
+              <div className="space-y-3.5 pt-4" id="device-essential-section">
                 <h3 className="text-xs font-black text-slate-900 tracking-wider flex items-center justify-between border-b border-slate-100 pb-2">
                   <div 
                     onClick={() => { setDrilldownDeviceMetric('all_devices'); setDrilldownPersonMetric(null); setDrilldownManagementMetric(null); }}
@@ -1288,8 +1296,8 @@ export default function DiscoveryPage() {
                 </div>
               </div>
 
-              {/* 3. 环境的本质安全 */}
-              <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-3" id="env-essential-card">
+              {/* SECTION 3: 环境的本质安全 */}
+              <div className="space-y-3 pt-4" id="env-essential-section">
                 <h3 className="text-xs font-black text-slate-900 tracking-wider flex items-center border-b border-slate-100 pb-2">
                   <span className="w-1.5 h-3.5 bg-emerald-500 rounded-full mr-2" />
                   环境的本质安全
@@ -1331,7 +1339,9 @@ export default function DiscoveryPage() {
                     ))}
                   </div>
                 </div>
-              </div>
+              </div> {/* Close SECTION 3 */}
+            </div> {/* Close intrinsic-safety-card-body */}
+          </div> {/* Close intrinsic-safety-composite-card */}
 
             </div>
 
@@ -1369,8 +1379,22 @@ export default function DiscoveryPage() {
                 </AnimatePresence>
 
                 {drilldownManagementMetric ? (
-                  /* ================= REAL-TIME MANAGEMENT WORK TICKETS PORTAL ================= */
-                  <div className="flex flex-col space-y-4 flex-1 relative z-10" id="unified-management-drilldown">
+                  drilldownManagementMetric === 'total_jobs_supervision' ? (
+                    <TotalJobsSupervision 
+                      tickets={managementWorkTickets} 
+                      onBack={() => {
+                        setDrilldownManagementMetric(null);
+                        setSelectedSupervisionTicket(null);
+                      }}
+                    />
+                  ) : selectedSupervisionTicket ? (
+                    <WorkSupervisionDetail 
+                      ticket={selectedSupervisionTicket} 
+                      onBack={() => setSelectedSupervisionTicket(null)} 
+                    />
+                  ) : (
+                    /* ================= REAL-TIME MANAGEMENT WORK TICKETS PORTAL ================= */
+                    <div className="flex flex-col space-y-4 flex-1 relative z-10" id="unified-management-drilldown">
                     
                     {/* Header with Back button */}
                     <div className="flex items-center justify-between border-b border-indigo-100 pb-3" id="drilldown-header-management">
@@ -1767,8 +1791,9 @@ export default function DiscoveryPage() {
                                   <td className="py-3 px-3 text-right">
                                     <button
                                       onClick={() => {
-                                        setToastMessage(`【作业现场视频监督】已启动工作票 [${ticket.id}] 所在区域的边缘分析球机与三维全景AI监管连线：锁定负责人 [${ticket.signer}] 现场规范作业。`);
-                                        setTimeout(() => setToastMessage(null), 5500);
+                                        setSelectedSupervisionTicket(ticket);
+                                        setToastMessage(`【全景AI连线】已成功调阅工作票 [${ticket.id}] (${ticket.plantName}) 实时视频流与5G智能识别信号。`);
+                                        setTimeout(() => setToastMessage(null), 4000);
                                       }}
                                       className="px-2 py-1 text-[8.5px] bg-white border border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-white hover:border-blue-600 rounded-md font-black transition-all cursor-pointer shadow-3xs"
                                     >
@@ -1793,6 +1818,7 @@ export default function DiscoveryPage() {
                     </div>
 
                   </div>
+                  )
                 ) : drilldownPersonMetric ? (
                   drilldownPersonMetric === 'all_personnel' ? (
                     /* ================= UNIFIED ALL PERSONNEL PORTAL ================= */
@@ -2962,6 +2988,7 @@ export default function DiscoveryPage() {
                       setDrilldownManagementMetric(drilldownManagementMetric ? null : 'workTickets_management');
                       setDrilldownPersonMetric(null);
                       setDrilldownDeviceMetric(null);
+                      setSelectedSupervisionTicket(null);
                     }}
                     className={`flex items-center cursor-pointer transition-colors group ${drilldownManagementMetric ? 'text-indigo-600' : 'text-slate-950 hover:text-indigo-650'}`}
                     title="点击查看管理本质安全及各电厂工作票列表"
@@ -2972,7 +2999,10 @@ export default function DiscoveryPage() {
                   </div>
                   {drilldownManagementMetric && (
                     <button 
-                      onClick={() => setDrilldownManagementMetric(null)}
+                      onClick={() => {
+                        setDrilldownManagementMetric(null);
+                        setSelectedSupervisionTicket(null);
+                      }}
                       className="text-[9.5px] text-indigo-600 hover:text-indigo-800 font-extrabold cursor-pointer border-b border-dashed border-indigo-500 pb-0.5"
                     >
                       返回日报
@@ -2988,17 +3018,46 @@ export default function DiscoveryPage() {
                   </h3>
 
                   <div className="grid grid-cols-3 gap-2.5 text-center text-xs">
-                    <div className="bg-[#f4f7fc]/70 border border-[#e4ecf7] rounded-xl py-3 px-1.5 flex flex-col justify-center items-center">
-                      <span className="text-[11px] text-slate-400 font-bold mb-1">作业总数</span>
-                      <span className="text-base font-black text-slate-800 font-mono">{ext.todayJobs.total}</span>
+                    <div 
+                      onClick={() => {
+                        setDrilldownManagementMetric('total_jobs_supervision');
+                        setDrilldownPersonMetric(null);
+                        setDrilldownDeviceMetric(null);
+                        setSelectedSupervisionTicket(null);
+                      }}
+                      className="bg-[#f4f7fc]/70 border border-[#e4ecf7] rounded-xl py-3 px-1.5 flex flex-col justify-center items-center cursor-pointer hover:bg-[#e8effd] hover:border-blue-300 transition-all shadow-3xs group"
+                      title="点击调用作业实时智能监管指挥舱"
+                    >
+                      <span className="text-[11px] text-slate-400 font-bold mb-1 group-hover:text-blue-600">作业总数</span>
+                      <span className="text-base font-black text-slate-800 font-mono group-hover:text-blue-700">{ext.todayJobs.total}</span>
                     </div>
-                    <div className="bg-rose-50/40 border border-rose-100/60 rounded-xl py-3 px-1.5 flex flex-col justify-center items-center">
-                      <span className="text-[10px] text-rose-500 font-black mb-1">重大风险</span>
-                      <span className="text-base font-black text-red-600 font-mono">{ext.todayJobs.major}</span>
+                    
+                    <div 
+                      onClick={() => {
+                        setDrilldownManagementMetric('total_jobs_supervision');
+                        setDrilldownPersonMetric(null);
+                        setDrilldownDeviceMetric(null);
+                        setSelectedSupervisionTicket(null);
+                      }}
+                      className="bg-rose-50/40 border border-rose-100/60 rounded-xl py-3 px-1.5 flex flex-col justify-center items-center cursor-pointer hover:bg-rose-50 hover:border-rose-300 transition-all shadow-3xs group"
+                      title="点击调用重大风险智能监管流"
+                    >
+                      <span className="text-[10px] text-rose-500 font-black mb-1 group-hover:text-rose-600">重大风险</span>
+                      <span className="text-base font-black text-red-600 font-mono group-hover:text-red-700">{ext.todayJobs.major}</span>
                     </div>
-                    <div className="bg-amber-50/40 border border-amber-100/60 rounded-xl py-3 px-1.5 flex flex-col justify-center items-center">
-                      <span className="text-[10px] text-amber-600 font-black mb-1">较大风险</span>
-                      <span className="text-base font-black text-[#f59e0b] font-mono">{ext.todayJobs.large}</span>
+                    
+                    <div 
+                      onClick={() => {
+                        setDrilldownManagementMetric('total_jobs_supervision');
+                        setDrilldownPersonMetric(null);
+                        setDrilldownDeviceMetric(null);
+                        setSelectedSupervisionTicket(null);
+                      }}
+                      className="bg-amber-50/40 border border-amber-100/60 rounded-xl py-3 px-1.5 flex flex-col justify-center items-center cursor-pointer hover:bg-amber-50 hover:border-amber-300 transition-all shadow-3xs group"
+                      title="点击调用较大风险智能监管流"
+                    >
+                      <span className="text-[10px] text-amber-600 font-black mb-1 group-hover:text-amber-700">较大风险</span>
+                      <span className="text-base font-black text-[#f59e0b] font-mono group-hover:text-[#d97706]">{ext.todayJobs.large}</span>
                     </div>
                   </div>
 

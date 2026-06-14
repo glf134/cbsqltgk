@@ -469,7 +469,8 @@ export const TotalJobsSupervision: React.FC<TotalJobsSupervisionProps> = ({
   const requestedRisks = [
     { tag: '受控动火', desc: '焊接高温及易燃气体极易引发瞬间火灾事故', action: '防爆红外探头持续扫描中' },
     { tag: '受限空间', desc: '深度狭小舱体易产生二氧化碳及缺氧窒息风险', action: '智能防坠负氧检测仪持续在网' },
-    { tag: '焊接探伤', desc: '焊接高温及易燃气体极易引发瞬间火灾事故', action: '红外光感侵入雷达警戒开启' }
+    { tag: '高空攀爬', desc: '高耸钢架平台或深部储罐脚手临边易发高空侵入及跌落风险', action: '双防坠安全锁扣雷达及姿态传感器联动' },
+    { tag: '焊接探伤', desc: '探伤射线强度和核阻环境极易引发辅辐射及二次燃点事故', action: '红外光感侵入雷达警戒开启' }
   ];
 
   // High-fidelity alerts replica according to screenshots (未带安全帽 异常 / 正常)
@@ -557,6 +558,42 @@ export const TotalJobsSupervision: React.FC<TotalJobsSupervisionProps> = ({
       confidence: '94.8%',
       model: 'Duty-Sentry-v1.5',
       device: 'HW-IPC-509'
+    },
+    { 
+      id: 'AL-122510', 
+      title: '不按规定挂设双挂钩', 
+      status: '异常', 
+      camera: '3#吸收塔高架CAM11', 
+      time: '14:15:30', 
+      person: '张攀爬', 
+      phone: '136****5432',
+      confidence: '97.1%',
+      model: 'Harness-Check-v1.2',
+      device: 'HW-IPC-301'
+    },
+    { 
+      id: 'AL-122511', 
+      title: '越界进入动火危险区', 
+      status: '异常', 
+      camera: '1#油罐集区外围CAM04', 
+      time: '14:22:10', 
+      person: '刘跨墙', 
+      phone: '158****6655',
+      confidence: '98.3%',
+      model: 'Border-Viol-v4.0',
+      device: 'HW-IPC-404'
+    },
+    { 
+      id: 'AL-122512', 
+      title: '临空作业无旁监护人', 
+      status: '异常', 
+      camera: '2#渣水系统二层CAM07', 
+      time: '14:28:45', 
+      person: '杨监督', 
+      phone: '135****9900',
+      confidence: '95.6%',
+      model: 'Supervisor-v2.5',
+      device: 'HW-IPC-207'
     },
     { 
       id: 'AL-122508', 
@@ -1076,8 +1113,8 @@ export const TotalJobsSupervision: React.FC<TotalJobsSupervisionProps> = ({
 
         {/* RIGHT METRICS SIDEBAR COLUMN: Compact flat layout without nested cards */}
         {isSidebarExpanded && (
-          <div className="lg:col-span-1" id="workspace-east-panel">
-            <div className="bg-white border border-slate-200 rounded-2xl p-3 flex flex-col h-[660px] lg:h-[720px] shadow-sm text-slate-700 font-sans" id="job-metrics-unified-panel">
+          <div className="lg:col-span-1 h-full" id="workspace-east-panel">
+            <div className="bg-white border border-slate-200 rounded-2xl p-3 flex flex-col h-full lg:h-full min-h-[820px] shadow-sm text-slate-700 font-sans" id="job-metrics-unified-panel">
               <div className="flex flex-col h-full divide-y divide-slate-100 space-y-2.5">
                 
                 {/* SUB-SECTION 1: 作业信息 (Flat borderless container) */}
@@ -1120,7 +1157,7 @@ export const TotalJobsSupervision: React.FC<TotalJobsSupervisionProps> = ({
                 </div>
 
                 {/* SUB-SECTION 2: 作业风险提示 (Flat display) */}
-                <div className="flex flex-col justify-between overflow-hidden h-[340px] py-1.5 shrink-0" id="job-risks-section">
+                <div className="flex flex-col justify-between overflow-hidden h-[420px] py-1.5 shrink-0" id="job-risks-section">
                   <div className="flex items-center justify-between pb-1 shrink-0">
                     <h4 className="text-[11px] font-black text-slate-900 flex items-center tracking-wide uppercase">
                       <AlertTriangle className="w-3.5 h-3.5 text-amber-500 mr-1.5 shrink-0 animate-pulse" />

@@ -377,6 +377,7 @@ export default function DiscoveryPage() {
   const [currentPlantId, setCurrentPlantId] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'leader' | 'safety_dept'>('leader');
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState<boolean>(false);
+  const [rightPanelCollapsed, setRightPanelCollapsed] = useState<boolean>(false);
   
   // Interactive Live states for supervising (Major Defects)
   const [supervisions, setSupervisions] = useState<Record<string, string>>({});
@@ -943,6 +944,14 @@ export default function DiscoveryPage() {
     ];
   }, [currentPlantId, violationsPeriod]);
 
+  const handleBackToDailyReport = () => {
+    setDrilldownPersonMetric(null);
+    setDrilldownDeviceMetric(null);
+    setDrilldownManagementMetric(null);
+    setLeftPanelCollapsed(false);
+    setRightPanelCollapsed(false);
+  };
+
   const handleLaunchSupervision = (defect: any) => {
     setActiveSupervisingDefect(defect);
     setSupervisionMemo('');
@@ -991,12 +1000,12 @@ export default function DiscoveryPage() {
       <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar" id="provincial-main-scroll">
         
         {viewMode === 'leader' ? (
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 h-[calc(100vh-140px)] overflow-hidden" id="leader-dashboard-viewport">
+          <div className="flex flex-col xl:flex-row gap-5 h-[calc(100vh-140px)] overflow-hidden" id="leader-dashboard-viewport">
             
-            {/* ================= LEFT COLUMN: 人的、设备的、环境的本质安全 (xl:col-span-3 / xl:col-span-2) ================= */}
+            {/* ================= LEFT COLUMN: 人的、设备的、环境的本质安全 ================= */}
             <div 
-              className={`h-full overflow-y-auto space-y-4 pr-1 scrollbar-thin pb-6 transition-all duration-500 ease-in-out ${
-                leftPanelCollapsed ? 'xl:col-span-2' : 'xl:col-span-3'
+              className={`h-full overflow-y-auto space-y-4 pr-1 scrollbar-thin pb-6 transition-all duration-500 ease-in-out shrink-0 w-full ${
+                leftPanelCollapsed ? 'xl:w-[16%]' : 'xl:w-[25%]'
               }`} 
               id="left-metrics-column"
             >
@@ -1021,7 +1030,7 @@ export default function DiscoveryPage() {
                       <div className="flex items-center space-x-2">
                         {drilldownPersonMetric && (
                           <button 
-                            onClick={() => setDrilldownPersonMetric(null)}
+                            onClick={handleBackToDailyReport}
                             className="text-[9px] text-indigo-600 hover:text-indigo-800 font-extrabold cursor-pointer border-b border-dashed border-indigo-500 pb-0.5 mr-2"
                           >
                             返回
@@ -1158,7 +1167,7 @@ export default function DiscoveryPage() {
                   </div>
                   {drilldownDeviceMetric && (
                     <button 
-                      onClick={() => setDrilldownDeviceMetric(null)}
+                      onClick={handleBackToDailyReport}
                       className="text-[9px] text-rose-600 hover:text-rose-800 font-extrabold cursor-pointer border-b border-dashed border-rose-500 pb-0.5"
                     >
                       返回日报
@@ -1408,11 +1417,9 @@ export default function DiscoveryPage() {
 
             </div>
 
-            {/* ================= CENTER COLUMN: AI安全日报 (xl:col-span-6 / xl:col-span-7) ================= */}
+            {/* ================= CENTER COLUMN: AI安全日报 ================= */}
             <div 
-              className={`h-full overflow-y-auto pr-1 scrollbar-thin flex flex-col pb-6 transition-all duration-500 ease-in-out ${
-                leftPanelCollapsed ? 'xl:col-span-7' : 'xl:col-span-6'
-              }`} 
+              className="h-full overflow-y-auto pr-1 scrollbar-thin flex flex-col pb-6 transition-all duration-500 ease-in-out flex-1 min-w-0" 
               id="center-daily-report-column"
             >
               
@@ -1451,7 +1458,7 @@ export default function DiscoveryPage() {
                     <TotalJobsSupervision 
                       tickets={managementWorkTickets} 
                       onBack={() => {
-                        setDrilldownManagementMetric(null);
+                        handleBackToDailyReport();
                         setSelectedSupervisionTicket(null);
                       }}
                     />
@@ -1467,7 +1474,7 @@ export default function DiscoveryPage() {
                     {/* Header with Back button */}
                     <div className="flex items-center justify-between border-b border-indigo-100 pb-3" id="drilldown-header-management">
                       <button 
-                        onClick={() => setDrilldownManagementMetric(null)}
+                        onClick={handleBackToDailyReport}
                         className="flex items-center space-x-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-bold transition-all cursor-pointer border border-indigo-100/50 shadow-2xs"
                       >
                         <ArrowLeft className="w-3.5 h-3.5 stroke-[2.5]" />
@@ -1895,7 +1902,7 @@ export default function DiscoveryPage() {
                       {/* Header with Back button */}
                       <div className="flex items-center justify-between border-b border-slate-100 pb-3" id="drilldown-header-unified">
                         <button 
-                          onClick={() => setDrilldownPersonMetric(null)}
+                          onClick={handleBackToDailyReport}
                           className="flex items-center space-x-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-bold transition-all cursor-pointer border border-indigo-100/50 shadow-2xs"
                         >
                           <ArrowLeft className="w-3.5 h-3.5 stroke-[2.5]" />
@@ -2114,7 +2121,7 @@ export default function DiscoveryPage() {
                     {/* Header with Back button */}
                     <div className="flex items-center justify-between border-b border-slate-100 pb-3" id="drilldown-header">
                       <button 
-                        onClick={() => setDrilldownPersonMetric(null)}
+                        onClick={handleBackToDailyReport}
                         className="flex items-center space-x-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-bold transition-all cursor-pointer border border-indigo-100/50 shadow-2xs"
                       >
                         <ArrowLeft className="w-3.5 h-3.5 stroke-[2.5]" />
@@ -2272,7 +2279,7 @@ export default function DiscoveryPage() {
                     {/* Header with Back button */}
                     <div className="flex items-center justify-between border-b border-rose-100 pb-3" id="drilldown-header-unified-devices">
                       <button 
-                        onClick={() => setDrilldownDeviceMetric(null)}
+                        onClick={handleBackToDailyReport}
                         className="flex items-center space-x-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg text-xs font-bold transition-all cursor-pointer border border-rose-100/50 shadow-2xs"
                       >
                         <ArrowLeft className="w-3.5 h-3.5 stroke-[2.5]" />
@@ -2468,7 +2475,7 @@ export default function DiscoveryPage() {
                     {/* Header with Back button */}
                     <div className="flex items-center justify-between border-b border-indigo-105 pb-3" id="drilldown-header-unified-smart-devices">
                       <button 
-                        onClick={() => setDrilldownDeviceMetric(null)}
+                        onClick={handleBackToDailyReport}
                         className="flex items-center space-x-1.5 px-3 py-1.4 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-bold transition-all cursor-pointer border border-indigo-100/50 shadow-2xs"
                       >
                         <ArrowLeft className="w-3.5 h-3.5 stroke-[2.5]" />
@@ -2664,7 +2671,7 @@ export default function DiscoveryPage() {
                     {/* Header with Back button */}
                     <div className={`flex items-center justify-between border-b pb-3 ${['smartHelmet', 'smartBelt', 'smartRobot'].includes(drilldownDeviceMetric) ? 'border-indigo-100' : 'border-rose-100'}`} id="drilldown-header-single-device">
                       <button 
-                        onClick={() => setDrilldownDeviceMetric(null)}
+                        onClick={handleBackToDailyReport}
                         className={`flex items-center space-x-1.5 px-3 py-1.4 rounded-lg text-xs font-bold transition-all cursor-pointer border shadow-2xs ${['smartHelmet', 'smartBelt', 'smartRobot'].includes(drilldownDeviceMetric) ? 'bg-indigo-50/75 hover:bg-indigo-100 text-indigo-700 border-indigo-100/50' : 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-100/50'}`}
                       >
                         <ArrowLeft className="w-3.5 h-3.5 stroke-[2.5]" />
@@ -3043,8 +3050,13 @@ export default function DiscoveryPage() {
 
             </div>
 
-            {/* ================= RIGHT COLUMN: 管理的本质安全 (xl:col-span-3) ================= */}
-            <div className="xl:col-span-3 h-full overflow-y-auto pr-1 scrollbar-thin flex flex-col pb-6" id="right-metrics-column">
+            {/* ================= RIGHT COLUMN: 管理的本质安全 ================= */}
+            <div 
+              className={`h-full overflow-y-auto pr-1 scrollbar-thin flex flex-col pb-6 transition-all duration-500 ease-in-out shrink-0 w-full ${
+                rightPanelCollapsed ? 'xl:w-[16%]' : 'xl:w-[25%]'
+              }`} 
+              id="right-metrics-column"
+            >
               
               {/* COMPOSITE CARD: 管理的本质安全 (WITH REQUIRED SUB-SECTIONS) */}
               <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-5 flex-1 flex flex-col justify-between" id="management-essential-composite-card">
@@ -3065,17 +3077,26 @@ export default function DiscoveryPage() {
                     <span className="text-base font-black underline decoration-dashed decoration-indigo-300 underline-offset-4">管理的本质安全</span>
                     <span className="ml-1.5 text-[7.5px] px-1 py-0.2 bg-indigo-50 text-indigo-600 rounded font-black font-sans shrink-0 border border-indigo-100/60 transition-all group-hover:bg-indigo-150">全景对标 &raquo;</span>
                   </div>
-                  {drilldownManagementMetric && (
+                  <div className="flex items-center space-x-2">
+                    {drilldownManagementMetric && (
+                      <button 
+                        onClick={() => {
+                          handleBackToDailyReport();
+                          setSelectedSupervisionTicket(null);
+                        }}
+                        className="text-[9.5px] text-indigo-600 hover:text-indigo-800 font-extrabold cursor-pointer border-b border-dashed border-indigo-500 pb-0.5 mr-2"
+                      >
+                        返回
+                      </button>
+                    )}
                     <button 
-                      onClick={() => {
-                        setDrilldownManagementMetric(null);
-                        setSelectedSupervisionTicket(null);
-                      }}
-                      className="text-[9.5px] text-indigo-600 hover:text-indigo-800 font-extrabold cursor-pointer border-b border-dashed border-indigo-500 pb-0.5"
+                      onClick={() => setRightPanelCollapsed(!rightPanelCollapsed)}
+                      className="text-[9px] text-slate-400 hover:text-indigo-600 font-bold cursor-pointer transition-all flex items-center space-x-0.5"
+                      title={rightPanelCollapsed ? "展开极简版指标区" : "收起指标区"}
                     >
-                      返回日报
+                      <span className="border-b border-dashed border-slate-300 hover:border-indigo-500 tracking-tight">{rightPanelCollapsed ? "展开" : "收起"}</span>
                     </button>
-                  )}
+                  </div>
                 </div>
 
                 {/* 2. 今日作业 */}
@@ -3085,52 +3106,107 @@ export default function DiscoveryPage() {
                     今日作业
                   </h3>
 
-                  <div className="grid grid-cols-3 gap-2.5 text-center text-xs">
-                    <div 
-                      onClick={() => {
-                        setDrilldownManagementMetric('total_jobs_supervision');
-                        setDrilldownPersonMetric(null);
-                        setDrilldownDeviceMetric(null);
-                        setSelectedSupervisionTicket(null);
-                        setLeftPanelCollapsed(true);
-                      }}
-                      className="bg-[#f4f7fc]/70 border border-[#e4ecf7] rounded-xl py-3 px-1.5 flex flex-col justify-center items-center cursor-pointer hover:bg-[#e8effd] hover:border-blue-300 transition-all shadow-3xs group"
-                      title="点击调用作业实时智能监管指挥舱"
-                    >
-                      <span className="text-[11px] text-slate-400 font-bold mb-1 group-hover:text-blue-600">作业总数</span>
-                      <span className="text-base font-black text-slate-800 font-mono group-hover:text-blue-700">{ext.todayJobs.total}</span>
+                  {rightPanelCollapsed ? (
+                    <div className="space-y-2.5 pt-1">
+                      <div 
+                        onClick={() => {
+                          setDrilldownManagementMetric('total_jobs_supervision');
+                          setDrilldownPersonMetric(null);
+                          setDrilldownDeviceMetric(null);
+                          setSelectedSupervisionTicket(null);
+                          setLeftPanelCollapsed(true);
+                          setRightPanelCollapsed(true);
+                        }}
+                        className="bg-[#f4f7fc]/70 border border-[#e4ecf7] rounded-xl p-3 flex items-center justify-between cursor-pointer hover:bg-[#e8effd] hover:border-blue-300 transition-all shadow-3xs group"
+                        title="点击展开作业实时智能监管指挥舱"
+                      >
+                        <span className="text-[11px] text-slate-400 font-bold group-hover:text-blue-600 transition-colors">作业总数</span>
+                        <span className="text-sm font-mono font-black text-slate-800 group-hover:text-blue-700 transition-colors">{ext.todayJobs.total}</span>
+                      </div>
+                      
+                      <div 
+                        onClick={() => {
+                          setDrilldownManagementMetric('total_jobs_supervision');
+                          setDrilldownPersonMetric(null);
+                          setDrilldownDeviceMetric(null);
+                          setSelectedSupervisionTicket(null);
+                          setLeftPanelCollapsed(true);
+                          setRightPanelCollapsed(true);
+                        }}
+                        className="bg-rose-50/40 border border-rose-100/60 rounded-xl p-3 flex items-center justify-between cursor-pointer hover:bg-rose-50 hover:border-rose-300 transition-all shadow-3xs group"
+                        title="点击展开重大风险智能监管流"
+                      >
+                        <span className="text-[11px] text-rose-550 font-bold group-hover:text-rose-650 transition-colors">重大风险</span>
+                        <span className="text-sm font-mono font-black text-red-600 group-hover:text-red-700 transition-colors">{ext.todayJobs.major}</span>
+                      </div>
+
+                      <div 
+                        onClick={() => {
+                          setDrilldownManagementMetric('total_jobs_supervision');
+                          setDrilldownPersonMetric(null);
+                          setDrilldownDeviceMetric(null);
+                          setSelectedSupervisionTicket(null);
+                          setLeftPanelCollapsed(true);
+                          setRightPanelCollapsed(true);
+                        }}
+                        className="bg-amber-50/40 border border-amber-100/60 rounded-xl p-3 flex items-center justify-between cursor-pointer hover:bg-amber-50 hover:border-amber-300 transition-all shadow-3xs group"
+                        title="点击展开较大风险智能监管流"
+                      >
+                        <span className="text-[11px] text-amber-600 font-bold group-hover:text-amber-700 transition-colors">较大风险</span>
+                        <span className="text-sm font-mono font-black text-[#f59e0b] group-hover:text-[#d97706] transition-colors">{ext.todayJobs.large}</span>
+                      </div>
                     </div>
-                    
-                    <div 
-                      onClick={() => {
-                        setDrilldownManagementMetric('total_jobs_supervision');
-                        setDrilldownPersonMetric(null);
-                        setDrilldownDeviceMetric(null);
-                        setSelectedSupervisionTicket(null);
-                        setLeftPanelCollapsed(true);
-                      }}
-                      className="bg-rose-50/40 border border-rose-100/60 rounded-xl py-3 px-1.5 flex flex-col justify-center items-center cursor-pointer hover:bg-rose-50 hover:border-rose-300 transition-all shadow-3xs group"
-                      title="点击调用重大风险智能监管流"
-                    >
-                      <span className="text-[10px] text-rose-500 font-black mb-1 group-hover:text-rose-600">重大风险</span>
-                      <span className="text-base font-black text-red-600 font-mono group-hover:text-red-700">{ext.todayJobs.major}</span>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-2.5 text-center text-xs">
+                      <div 
+                        onClick={() => {
+                          setDrilldownManagementMetric('total_jobs_supervision');
+                          setDrilldownPersonMetric(null);
+                          setDrilldownDeviceMetric(null);
+                          setSelectedSupervisionTicket(null);
+                          setLeftPanelCollapsed(true);
+                          setRightPanelCollapsed(true);
+                        }}
+                        className="bg-[#f4f7fc]/70 border border-[#e4ecf7] rounded-xl py-3 px-1.5 flex flex-col justify-center items-center cursor-pointer hover:bg-[#e8effd] hover:border-blue-300 transition-all shadow-3xs group"
+                        title="点击调用作业实时智能监管指挥舱"
+                      >
+                        <span className="text-[11px] text-slate-400 font-bold mb-1 group-hover:text-blue-600">作业总数</span>
+                        <span className="text-base font-black text-slate-800 font-mono group-hover:text-blue-700">{ext.todayJobs.total}</span>
+                      </div>
+                      
+                      <div 
+                        onClick={() => {
+                          setDrilldownManagementMetric('total_jobs_supervision');
+                          setDrilldownPersonMetric(null);
+                          setDrilldownDeviceMetric(null);
+                          setSelectedSupervisionTicket(null);
+                          setLeftPanelCollapsed(true);
+                          setRightPanelCollapsed(true);
+                        }}
+                        className="bg-rose-50/40 border border-rose-100/60 rounded-xl py-3 px-1.5 flex flex-col justify-center items-center cursor-pointer hover:bg-rose-50 hover:border-rose-300 transition-all shadow-3xs group"
+                        title="点击调用重大风险智能监管流"
+                      >
+                        <span className="text-[10px] text-rose-500 font-black mb-1 group-hover:text-rose-600">重大风险</span>
+                        <span className="text-base font-black text-red-600 font-mono group-hover:text-red-700">{ext.todayJobs.major}</span>
+                      </div>
+                      
+                      <div 
+                        onClick={() => {
+                          setDrilldownManagementMetric('total_jobs_supervision');
+                          setDrilldownPersonMetric(null);
+                          setDrilldownDeviceMetric(null);
+                          setSelectedSupervisionTicket(null);
+                          setLeftPanelCollapsed(true);
+                          setRightPanelCollapsed(true);
+                        }}
+                        className="bg-amber-50/40 border border-amber-100/60 rounded-xl py-3 px-1.5 flex flex-col justify-center items-center cursor-pointer hover:bg-amber-50 hover:border-amber-300 transition-all shadow-3xs group"
+                        title="点击调用较大风险智能监管流"
+                      >
+                        <span className="text-[10px] text-amber-600 font-black mb-1 group-hover:text-amber-700">较大风险</span>
+                        <span className="text-base font-black text-[#f59e0b] font-mono group-hover:text-[#d97706]">{ext.todayJobs.large}</span>
+                      </div>
                     </div>
-                    
-                    <div 
-                      onClick={() => {
-                        setDrilldownManagementMetric('total_jobs_supervision');
-                        setDrilldownPersonMetric(null);
-                        setDrilldownDeviceMetric(null);
-                        setSelectedSupervisionTicket(null);
-                        setLeftPanelCollapsed(true);
-                      }}
-                      className="bg-amber-50/40 border border-amber-100/60 rounded-xl py-3 px-1.5 flex flex-col justify-center items-center cursor-pointer hover:bg-amber-50 hover:border-amber-300 transition-all shadow-3xs group"
-                      title="点击调用较大风险智能监管流"
-                    >
-                      <span className="text-[10px] text-amber-600 font-black mb-1 group-hover:text-amber-700">较大风险</span>
-                      <span className="text-base font-black text-[#f59e0b] font-mono group-hover:text-[#d97706]">{ext.todayJobs.large}</span>
-                    </div>
-                  </div>
+                  )}
 
                   {/* Horizontal Bar Chart for Today's Jobs by Power Plants (Sorted descending) */}
                   <div className="space-y-1.5 pt-1 border-t border-slate-50">
@@ -3190,70 +3266,91 @@ export default function DiscoveryPage() {
                     智能预警
                   </h3>
 
-                  <div className="grid grid-cols-3 gap-2.5 text-center text-xs">
-                    <div className="bg-slate-50/60 border border-slate-100 rounded-xl py-3 px-1.5 flex flex-col justify-center items-center">
-                      <span className="text-[10px] text-slate-400 font-bold mb-1">人员行为</span>
-                      <span className="text-base font-black text-[#ef4444] font-mono">{ext.smartAlerts.behavior}</span>
+                  {rightPanelCollapsed ? (
+                    <div className="space-y-2 pt-1 text-xs">
+                      <div className="bg-slate-50/60 border border-slate-100 rounded-xl px-3 py-2 flex items-center justify-between">
+                        <span className="text-[11px] text-slate-400 font-bold">人员行为</span>
+                        <span className="text-sm font-black text-[#ef4444] font-mono">{ext.smartAlerts.behavior}</span>
+                      </div>
+                      <div className="bg-slate-50/60 border border-slate-100 rounded-xl px-3 py-2 flex items-center justify-between">
+                        <span className="text-[11px] text-slate-400 font-bold">设备本体</span>
+                        <span className="text-sm font-black text-slate-800 font-mono">{ext.smartAlerts.equipment}</span>
+                      </div>
+                      <div className="bg-slate-50/60 border border-slate-100 rounded-xl px-3 py-2 flex items-center justify-between">
+                        <span className="text-[11px] text-slate-400 font-bold">作业环境</span>
+                        <span className="text-sm font-black text-slate-800 font-mono">{ext.smartAlerts.environment}</span>
+                      </div>
                     </div>
-                    <div className="bg-slate-50/60 border border-slate-100 rounded-xl py-3 px-1.5 flex flex-col justify-center items-center">
-                      <span className="text-[10px] text-slate-400 font-bold mb-1">设备本体</span>
-                      <span className="text-base font-black text-slate-800 font-mono">{ext.smartAlerts.equipment}</span>
-                    </div>
-                    <div className="bg-slate-50/60 border border-slate-100 rounded-xl py-3 px-1.5 flex flex-col justify-center items-center">
-                      <span className="text-[10px] text-slate-400 font-bold mb-1">作业环境</span>
-                      <span className="text-base font-black text-slate-800 font-mono">{ext.smartAlerts.environment}</span>
-                    </div>
-                  </div>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-3 gap-2.5 text-center text-xs">
+                        <div className="bg-slate-50/60 border border-slate-100 rounded-xl py-3 px-1.5 flex flex-col justify-center items-center">
+                          <span className="text-[10px] text-slate-400 font-bold mb-1">人员行为</span>
+                          <span className="text-base font-black text-[#ef4444] font-mono">{ext.smartAlerts.behavior}</span>
+                        </div>
+                        <div className="bg-slate-50/60 border border-slate-100 rounded-xl py-3 px-1.5 flex flex-col justify-center items-center">
+                          <span className="text-[10px] text-slate-400 font-bold mb-1">设备本体</span>
+                          <span className="text-base font-black text-slate-800 font-mono">{ext.smartAlerts.equipment}</span>
+                        </div>
+                        <div className="bg-slate-50/60 border border-slate-100 rounded-xl py-3 px-1.5 flex flex-col justify-center items-center">
+                          <span className="text-[10px] text-slate-400 font-bold mb-1">作业环境</span>
+                          <span className="text-base font-black text-slate-800 font-mono">{ext.smartAlerts.environment}</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
 
                   {/* Horizontal Bar Chart for Smart Alerts by Power Plants (Sorted descending) */}
-                  <div className="space-y-1.5 pt-1 border-t border-slate-50">
-                    <div className="text-[10px] text-slate-400 font-bold flex items-center justify-between">
-                      <span>各电厂智能预警排名 (倒序)</span>
-                      <span className="text-violet-600 font-mono">（次）</span>
+                  {!rightPanelCollapsed && (
+                    <div className="space-y-1.5 pt-1 border-t border-slate-50">
+                      <div className="text-[10px] text-slate-400 font-bold flex items-center justify-between">
+                        <span>各电厂智能预警排名 (倒序)</span>
+                        <span className="text-violet-600 font-mono">（次）</span>
+                      </div>
+                      <div className="h-[140px] w-full pt-1">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                            data={plantsAlertsData}
+                            layout="vertical"
+                            margin={{ top: 0, right: 12, left: -25, bottom: 0 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} vertical={true} />
+                            <XAxis 
+                              type="number" 
+                              tick={{ fill: '#64748b', fontSize: 7.5, fontWeight: 600 }} 
+                              axisLine={false} 
+                              tickLine={false} 
+                            />
+                            <YAxis 
+                              type="category" 
+                              dataKey="name" 
+                              tick={{ fill: '#475569', fontSize: 8.5, fontWeight: 700 }} 
+                              axisLine={false} 
+                              tickLine={false} 
+                              width={55}
+                            />
+                            <Tooltip
+                              contentStyle={{
+                                backgroundColor: '#ffffff',
+                                borderColor: '#e2e8f0',
+                                borderRadius: '8px',
+                                fontSize: 9.5,
+                                fontWeight: 650,
+                                boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)'
+                              }}
+                              labelStyle={{ color: '#0f172a', fontWeight: 'bold' }}
+                            />
+                            <Bar 
+                              dataKey="value" 
+                              radius={[0, 4, 4, 0]} 
+                              barSize={8}
+                              fill="#8b5cf6"
+                            />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
                     </div>
-                    <div className="h-[140px] w-full pt-1">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                          data={plantsAlertsData}
-                          layout="vertical"
-                          margin={{ top: 0, right: 12, left: -25, bottom: 0 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} vertical={true} />
-                          <XAxis 
-                            type="number" 
-                            tick={{ fill: '#64748b', fontSize: 7.5, fontWeight: 600 }} 
-                            axisLine={false} 
-                            tickLine={false} 
-                          />
-                          <YAxis 
-                            type="category" 
-                            dataKey="name" 
-                            tick={{ fill: '#475569', fontSize: 8.5, fontWeight: 700 }} 
-                            axisLine={false} 
-                            tickLine={false} 
-                            width={55}
-                          />
-                          <Tooltip
-                            contentStyle={{
-                              backgroundColor: '#ffffff',
-                              borderColor: '#e2e8f0',
-                              borderRadius: '8px',
-                              fontSize: 9.5,
-                              fontWeight: 650,
-                              boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)'
-                            }}
-                            labelStyle={{ color: '#0f172a', fontWeight: 'bold' }}
-                          />
-                          <Bar 
-                            dataKey="value" 
-                            radius={[0, 4, 4, 0]} 
-                            barSize={8}
-                            fill="#8b5cf6"
-                          />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* 4. 违章整改态势 */}
@@ -3264,98 +3361,119 @@ export default function DiscoveryPage() {
                       违章整改态势
                     </h3>
                     
-                    {/* Period Switcher tabs */}
-                    <div className="flex bg-slate-100 p-0.5 rounded-lg text-[10px] font-bold border border-slate-200/50">
-                      <button
-                        onClick={() => setViolationsPeriod('day')}
-                        className={`px-2 py-0.5 rounded-md transition-all ${violationsPeriod === 'day' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
-                      >
-                        日累计
-                      </button>
-                      <button
-                        onClick={() => setViolationsPeriod('month')}
-                        className={`px-2 py-0.5 rounded-md transition-all ${violationsPeriod === 'month' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
-                      >
-                        月累计
-                      </button>
-                    </div>
+                    {!rightPanelCollapsed && (
+                      /* Period Switcher tabs */
+                      <div className="flex bg-slate-100 p-0.5 rounded-lg text-[10px] font-bold border border-slate-200/50">
+                        <button
+                          onClick={() => setViolationsPeriod('day')}
+                          className={`px-2 py-0.5 rounded-md transition-all ${violationsPeriod === 'day' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                        >
+                          日累计
+                        </button>
+                        <button
+                          onClick={() => setViolationsPeriod('month')}
+                          className={`px-2 py-0.5 rounded-md transition-all ${violationsPeriod === 'month' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                        >
+                          月累计
+                        </button>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Legend matching screenshot */}
-                  <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1 text-[10px] font-bold text-slate-500 pt-0.5 px-0.5">
-                    <div className="flex items-center space-x-1">
-                      <span className="w-2.5 h-1.5 rounded-xs bg-[#3b82f6]" />
-                      <span>已整改</span>
+                  {rightPanelCollapsed ? (
+                    <div className="space-y-2 pt-1">
+                      <div className="bg-slate-50 border border-slate-100/60 rounded-xl px-3 py-2 text-xs font-bold text-slate-700/80 flex items-center justify-between shadow-3xs">
+                        <span>每日违章数</span>
+                        <span className="text-amber-600 font-bold font-mono text-[13px]">15 起</span>
+                      </div>
+                      <div className="bg-slate-50 border border-slate-100/60 rounded-xl px-3 py-2 text-xs font-bold text-slate-700/80 flex items-center justify-between shadow-3xs">
+                        <span>日已整改目</span>
+                        <span className="text-sky-600 font-bold font-mono text-[13px]">14 起</span>
+                      </div>
+                      <div className="bg-emerald-50/45 border border-emerald-100/40 rounded-xl px-3 py-2 text-xs font-bold text-emerald-850 flex items-center justify-between shadow-3xs">
+                        <span>整改闭环率</span>
+                        <span className="text-emerald-600 font-bold font-mono text-[13px]">93.3%</span>
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-1">
-                      <span className="w-2.5 h-1.5 rounded-xs bg-[#eab308]" />
-                      <span>违章数</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <span className="w-2 h-2 rounded-full border-2 border-[#14b8a6] bg-white shrink-0" />
-                      <span>整改率</span>
-                    </div>
-                  </div>
+                  ) : (
+                    <>
+                      {/* Legend matching screenshot */}
+                      <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1 text-[10px] font-bold text-slate-500 pt-0.5 px-0.5">
+                        <div className="flex items-center space-x-1">
+                          <span className="w-2.5 h-1.5 rounded-xs bg-[#3b82f6]" />
+                          <span>已整改</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <span className="w-2.5 h-1.5 rounded-xs bg-[#eab308]" />
+                          <span>违章数</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <span className="w-2   h-2 rounded-full border-2 border-[#14b8a6] bg-white shrink-0" />
+                          <span>整改率</span>
+                        </div>
+                      </div>
 
-                  {/* Responsive Chart Graphic */}
-                  <div className="h-[155px] w-full bg-slate-50/40 rounded-xl p-2 border border-slate-100/50 relative">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={violationsChartData}
-                        margin={{ top: 12, right: -5, left: -25, bottom: 0 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                        <XAxis 
-                          dataKey="category" 
-                          tick={{ fontSize: 9, fontWeight: 700, fill: '#64748b' }} 
-                          axisLine={false} 
-                          tickLine={false} 
-                        />
-                        {/* Left count axis */}
-                        <YAxis 
-                          yAxisId="left" 
-                          tick={{ fontSize: 9, fontWeight: 600, fill: '#94a3b8' }} 
-                          axisLine={false} 
-                          tickLine={false} 
-                          width={25}
-                        />
-                        {/* Right rate axis */}
-                        <YAxis 
-                          yAxisId="right" 
-                          orientation="right" 
-                          tick={{ fontSize: 9, fontWeight: 600, fill: '#94a3b8' }} 
-                          axisLine={false} 
-                          tickLine={false} 
-                          tickFormatter={(val) => `${val}%`}
-                          domain={[0, 100]}
-                          width={25}
-                        />
-                        <Tooltip 
-                          contentStyle={{ 
-                            backgroundColor: '#ffffff', 
-                            borderRadius: '12px', 
-                            borderColor: '#e2e8f0', 
-                            boxShadow: '0 4px 12px -2px rgb(0 0 0 / 0.08)' 
-                          }}
-                          itemStyle={{ fontSize: '10.5px', fontWeight: 600 }}
-                          labelStyle={{ fontSize: '11px', fontWeight: 800, color: '#0f172a', marginBottom: '4px' }}
-                        />
-                        {/* Bar charts side by side */}
-                        <Bar yAxisId="left" dataKey="已整改" fill="#3b82f6" radius={[2.5, 2.5, 0, 0]} maxBarSize={11} />
-                        <Bar yAxisId="left" dataKey="违章数" fill="#eab308" radius={[2.5, 2.5, 0, 0]} maxBarSize={11} />
-                        {/* Rate represented by line */}
-                        <Line
-                          yAxisId="right"
-                          type="monotone"
-                          dataKey="整改率"
-                          stroke="#14b8a6"
-                          strokeWidth={2}
-                          dot={{ r: 3.5, strokeWidth: 1.5, fill: '#fff' }}
-                          activeDot={{ r: 4.5, strokeWidth: 2, fill: '#14b8a6' }}
-                        />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
+                      {/* Responsive Chart Graphic */}
+                      <div className="h-[155px] w-full bg-slate-50/40 rounded-xl p-2 border border-slate-100/50 relative">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                            data={violationsChartData}
+                            margin={{ top: 12, right: -5, left: -25, bottom: 0 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                            <XAxis 
+                              dataKey="category" 
+                              tick={{ fontSize: 9, fontWeight: 700, fill: '#64748b' }} 
+                              axisLine={false} 
+                              tickLine={false} 
+                            />
+                            {/* Left count axis */}
+                            <YAxis 
+                              yAxisId="left" 
+                              tick={{ fontSize: 9, fontWeight: 600, fill: '#94a3b8' }} 
+                              axisLine={false} 
+                              tickLine={false} 
+                              width={25}
+                            />
+                            {/* Right rate axis */}
+                            <YAxis 
+                              yAxisId="right" 
+                              orientation="right" 
+                              tick={{ fontSize: 9, fontWeight: 600, fill: '#94a3b8' }} 
+                              axisLine={false} 
+                              tickLine={false} 
+                              tickFormatter={(val) => `${val}%`}
+                              domain={[0, 100]}
+                              width={25}
+                            />
+                            <Tooltip 
+                              contentStyle={{ 
+                                backgroundColor: '#ffffff', 
+                                borderRadius: '12px', 
+                                borderColor: '#e2e8f0', 
+                                boxShadow: '0 4px 12px -2px rgb(0 0 0 / 0.08)' 
+                              }}
+                              itemStyle={{ fontSize: '10.5px', fontWeight: 600 }}
+                              labelStyle={{ fontSize: '11px', fontWeight: 800, color: '#0f172a', marginBottom: '4px' }}
+                            />
+                            {/* Bar charts side by side */}
+                            <Bar yAxisId="left" dataKey="已整改" fill="#3b82f6" radius={[2.5, 2.5, 0, 0]} maxBarSize={11} />
+                            <Bar yAxisId="left" dataKey="违章数" fill="#eab308" radius={[2.5, 2.5, 0, 0]} maxBarSize={11} />
+                            {/* Rate represented by line */}
+                            <Line
+                              yAxisId="right"
+                              type="monotone"
+                              dataKey="整改率"
+                              stroke="#14b8a6"
+                              strokeWidth={2}
+                              dot={{ r: 3.5, strokeWidth: 1.5, fill: '#fff' }}
+                              activeDot={{ r: 4.5, strokeWidth: 2, fill: '#14b8a6' }}
+                            />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </>
+                  )}
                 </div>
 
               </div>

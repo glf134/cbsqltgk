@@ -376,6 +376,7 @@ const EXTRA_METRICS: Record<string, {
 export default function DiscoveryPage() {
   const [currentPlantId, setCurrentPlantId] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'leader' | 'safety_dept'>('leader');
+  const [leftPanelCollapsed, setLeftPanelCollapsed] = useState<boolean>(false);
   
   // Interactive Live states for supervising (Major Defects)
   const [supervisions, setSupervisions] = useState<Record<string, string>>({});
@@ -982,70 +983,9 @@ export default function DiscoveryPage() {
               华能甘肃能源智慧安全管控平台
               <span className="ml-2.5 px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded text-[10px] font-black border border-indigo-100">省公司级监管大屏</span>
             </h1>
-            <p className="text-[11px] text-slate-500 font-medium">
-              层级数据直接穿透 • 真实同源 • 无虚报 • 基层联动总站点（宁厂、兰州、平凉等）
-            </p>
           </div>
-        </div>
-
-        {/* WORKSPACE & PLANT SWITCHER */}
-        <div className="flex flex-wrap items-center gap-2" id="header-tools">
-          
-          {/* Permission Switcher */}
-          <div className="bg-slate-100 p-1 rounded-xl flex border border-slate-200">
-            <button 
-              onClick={() => setViewMode('leader')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1 ${viewMode === 'leader' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-800'}`}
-            >
-              <Award className="w-3.5 h-3.5" />
-              <span>领导总览大屏</span>
-            </button>
-            <button 
-              onClick={() => setViewMode('safety_dept')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1 ${viewMode === 'safety_dept' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-800'}`}
-            >
-              <Sliders className="w-3.5 h-3.5" />
-              <span>省安监部专项督办</span>
-            </button>
-          </div>
-
-          {/* Plant Drill Down Dropdown Filter */}
-          <div className="flex items-center bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 shadow-sm text-xs font-bold">
-            <Filter className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
-            <select 
-              value={currentPlantId} 
-              onChange={(e) => setCurrentPlantId(e.target.value)}
-              className="bg-transparent outline-none cursor-pointer text-slate-700 font-bold"
-            >
-              <option value="all">全省所有场厂数据合并汇总</option>
-              <option value="ningxian">宁县第一热电厂（图中宁厂）</option>
-              <option value="lanzhou">兰州东热电厂</option>
-              <option value="pingliang">平凉发电厂</option>
-            </select>
-          </div>
-
-          {/* Daily standard AI report builder export */}
-          <button 
-            onClick={handleExportDailyReport}
-            className="bg-indigo-600 hover:bg-slate-900 text-white font-bold text-xs px-3 py-2 rounded-xl shadow-sm transition-all flex items-center space-x-1.5"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>{reportExporting ? 'AI生成中...' : 'AI一键提炼监管日志'}</span>
-          </button>
         </div>
       </header>
-
-      {/* WARNING NOTIFICATION BAR */}
-      <div className="bg-rose-50 border-b border-rose-100 px-6 py-2 flex items-center justify-between shrink-0 text-rose-700 text-xs font-bold">
-        <div className="flex items-center space-x-2">
-          <ShieldAlert className="w-4 h-4 text-rose-500 animate-bounce shrink-0" />
-          <span>【实时安全预警】宁县第一热电厂1#制氢副泵房气体H₂传感器当前读数超标(1.24% &gt; 1.0%)已触发强制联动预警；全省另有14项人脸特种证件超期预警！</span>
-        </div>
-        <div className="hidden lg:flex items-center space-x-1 text-slate-400 font-normal">
-          <span>数据同步时区: 2026-06-02 15:28:10 UTC</span>
-          <RefreshCw className="w-3 h-3 hover:rotate-180 transition-all cursor-pointer text-slate-500" />
-        </div>
-      </div>
 
       {/* ================= MAIN SCROLLABLE CONTAINER ================= */}
       <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar" id="provincial-main-scroll">
@@ -1053,97 +993,156 @@ export default function DiscoveryPage() {
         {viewMode === 'leader' ? (
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 h-[calc(100vh-140px)] overflow-hidden" id="leader-dashboard-viewport">
             
-            {/* ================= LEFT COLUMN: 人的、设备的、环境的本质安全 (xl:col-span-3) ================= */}
-            <div className="xl:col-span-3 h-full overflow-y-auto space-y-4 pr-1 scrollbar-thin pb-6" id="left-metrics-column">
+            {/* ================= LEFT COLUMN: 人的、设备的、环境的本质安全 (xl:col-span-3 / xl:col-span-2) ================= */}
+            <div 
+              className={`h-full overflow-y-auto space-y-4 pr-1 scrollbar-thin pb-6 transition-all duration-500 ease-in-out ${
+                leftPanelCollapsed ? 'xl:col-span-2' : 'xl:col-span-3'
+              }`} 
+              id="left-metrics-column"
+            >
               
               {/* 统一的五防本质安全综合管控卡片 */}
               <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm flex flex-col overflow-hidden animate-fade-in" id="intrinsic-safety-composite-card">
-
+                
                 <div className="p-4 space-y-5 divide-y divide-slate-100/80" id="intrinsic-safety-card-body">
                   
                   {/* SECTION 1: 人的本质安全 */}
                   <div className="space-y-3 pb-1" id="human-essential-section">
                     <h3 className="text-xs font-black text-slate-900 tracking-wider flex items-center justify-between border-b border-slate-100 pb-2">
-                  <div 
-                    onClick={() => { setDrilldownPersonMetric('all_personnel'); setDrilldownManagementMetric(null); setDrilldownDeviceMetric(null); }}
-                    className="flex items-center cursor-pointer hover:text-indigo-600 transition-colors group"
-                    title="点击查看人员本质安全综合大底座穿透视图"
-                  >
-                    <span className="w-1.5 h-3.5 bg-blue-500 rounded-full mr-2 group-hover:scale-y-125 transition-transform" />
-                    <span className="underline decoration-dashed decoration-indigo-300 underline-offset-4 group-hover:text-indigo-700">人的本质安全</span>
-                    <span className="ml-1 text-[7.5px] px-1 py-0.2 bg-indigo-50 text-indigo-600 rounded font-black font-sans shrink-0 border border-indigo-100/60 transition-all group-hover:bg-indigo-150">全景对标 &raquo;</span>
-                  </div>
-                  {drilldownPersonMetric && (
-                    <button 
-                      onClick={() => setDrilldownPersonMetric(null)}
-                      className="text-[9px] text-indigo-600 hover:text-indigo-800 font-extrabold cursor-pointer border-b border-dashed border-indigo-500 pb-0.5"
-                    >
-                      返回日报
-                    </button>
-                  )}
-                </h3>
-                
-                <div 
-                  onClick={() => { setDrilldownPersonMetric('totalOnDuty'); setDrilldownManagementMetric(null); setDrilldownDeviceMetric(null); }}
-                  className={`flex items-center justify-between p-2 rounded-xl transition-all border cursor-pointer group ${drilldownPersonMetric === 'totalOnDuty' ? 'bg-indigo-50/50 border-indigo-200 shadow-3xs ring-1 ring-indigo-100' : 'bg-slate-50/50 border-slate-100/70 hover:bg-indigo-50/30 hover:border-indigo-150'}`}
-                >
-                  <div className="space-y-0.5">
-                    <span className="text-[10px] text-slate-400 font-bold flex items-center gap-1 group-hover:text-indigo-500 transition-colors">
-                      在岗总人数
-                    </span>
-                    <div className="flex items-baseline">
-                      <span className="text-2xl font-black text-indigo-600 group-hover:text-indigo-750 transition-colors tracking-tight transform group-hover:scale-[1.02] origin-left duration-200">{data.totalOnDuty.toLocaleString()}</span>
-                      <span className="text-xs text-indigo-400 font-semibold ml-1">人</span>
-                    </div>
-                  </div>
-                  <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded text-[10px] font-bold flex items-center animate-pulse">
-                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-1" />
-                    安全连网
-                  </span>
-                </div>
+                      <div 
+                        onClick={() => { setDrilldownPersonMetric('all_personnel'); setDrilldownManagementMetric(null); setDrilldownDeviceMetric(null); }}
+                        className="flex items-center cursor-pointer hover:text-indigo-600 transition-colors group"
+                        title="点击查看人员本质安全综合大底座穿透视图"
+                      >
+                        <span className="w-1.5 h-3.5 bg-blue-500 rounded-full mr-2 group-hover:scale-y-125 transition-transform" />
+                        <span className="underline decoration-dashed decoration-indigo-300 underline-offset-4 group-hover:text-indigo-700">人的本质安全</span>
+                        <span className="ml-1 text-[7.5px] px-1 py-0.2 bg-indigo-50 text-indigo-600 rounded font-black font-sans shrink-0 border border-indigo-100/60 transition-all group-hover:bg-indigo-150">全景对标 &raquo;</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        {drilldownPersonMetric && (
+                          <button 
+                            onClick={() => setDrilldownPersonMetric(null)}
+                            className="text-[9px] text-indigo-600 hover:text-indigo-800 font-extrabold cursor-pointer border-b border-dashed border-indigo-500 pb-0.5 mr-2"
+                          >
+                            返回
+                          </button>
+                        )}
+                        <button 
+                          onClick={() => setLeftPanelCollapsed(!leftPanelCollapsed)}
+                          className="text-[9px] text-slate-400 hover:text-indigo-600 font-bold cursor-pointer transition-all flex items-center space-x-0.5"
+                          title={leftPanelCollapsed ? "展开极简版指标区" : "收起指标区"}
+                        >
+                          <span className="border-b border-dashed border-slate-300 hover:border-indigo-500 tracking-tight">{leftPanelCollapsed ? "展开" : "收起"}</span>
+                        </button>
+                      </div>
+                    </h3>
 
-                <div className="grid grid-cols-2 gap-2 text-xs pt-1">
-                  <div 
-                    onClick={() => { setDrilldownPersonMetric('outsourcingCount'); setDrilldownManagementMetric(null); setDrilldownDeviceMetric(null); }}
-                    className={`p-2 rounded-xl border transition-all cursor-pointer group flex flex-col justify-between h-13.5 ${drilldownPersonMetric === 'outsourcingCount' ? 'bg-indigo-50/50 border-indigo-200 shadow-3xs ring-1 ring-indigo-100' : 'bg-slate-50 border-slate-100/60 hover:bg-indigo-50/20 hover:border-indigo-150/70'}`}
-                  >
-                    <span className="text-[9px] text-slate-400 font-bold block group-hover:text-indigo-500 transition-colors">
-                      承包商数量
-                    </span>
-                    <span className="text-xs font-black text-indigo-600 group-hover:text-indigo-750 transition-colors duration-200">{data.outsourcingCount} 家</span>
+                    {leftPanelCollapsed ? (
+                      /* Collapsed layout (identical to screenshot structure) */
+                      <div className="space-y-3 pt-1">
+                        <div 
+                          onClick={() => { setDrilldownPersonMetric('totalOnDuty'); setDrilldownManagementMetric(null); setDrilldownDeviceMetric(null); }}
+                          className={`flex items-center justify-between p-3.5 rounded-2xl transition-all border cursor-pointer group ${drilldownPersonMetric === 'totalOnDuty' ? 'bg-indigo-50/50 border-indigo-200 shadow-3xs ring-1 ring-indigo-100' : 'bg-slate-50/50 border-indigo-150/50 hover:bg-slate-50 hover:border-indigo-200'}`}
+                        >
+                          <div className="space-y-1">
+                            <span className="text-[11px] text-slate-400 font-bold flex items-center gap-1 group-hover:text-indigo-500 transition-colors">
+                              在岗总人数
+                            </span>
+                            <div className="flex items-baseline">
+                              <span className="text-2xl font-black text-indigo-600 group-hover:text-indigo-750 transition-colors tracking-tight transform group-hover:scale-[1.02] origin-left duration-200">{data.totalOnDuty.toLocaleString()}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between p-1 bg-indigo-50 text-indigo-600 rounded-full w-6 h-6 shrink-0 font-sans font-black text-xs">
+                            <span className="mx-auto">人</span>
+                          </div>
+                        </div>
+
+                        <div 
+                          onClick={() => { setDrilldownPersonMetric('outsourcingCount'); setDrilldownManagementMetric(null); setDrilldownDeviceMetric(null); }}
+                          className={`p-3 rounded-2xl border transition-all cursor-pointer group flex flex-col justify-between h-16 ${drilldownPersonMetric === 'outsourcingCount' ? 'bg-indigo-50/50 border-indigo-200 shadow-3xs ring-1 ring-indigo-100' : 'bg-slate-50/50 border-slate-100/60 hover:bg-indigo-50/20 hover:border-indigo-150/75'}`}
+                        >
+                          <span className="text-[11px] text-slate-400 font-bold block group-hover:text-indigo-500 transition-colors mb-1">
+                            承包商数量
+                          </span>
+                          <span className="text-sm font-black text-indigo-600 group-hover:text-indigo-750 transition-colors duration-200">{data.outsourcingCount} 家</span>
+                        </div>
+
+                        <div 
+                          onClick={() => { setDrilldownPersonMetric('longTermTeams'); setDrilldownManagementMetric(null); setDrilldownDeviceMetric(null); }}
+                          className={`p-3 rounded-2xl border transition-all cursor-pointer group flex flex-col justify-between h-16 ${drilldownPersonMetric === 'longTermTeams' ? 'bg-indigo-50/50 border-indigo-200 shadow-3xs ring-1 ring-indigo-100' : 'bg-slate-50/50 border-slate-100/60 hover:bg-indigo-50/20 hover:border-indigo-150/75'}`}
+                        >
+                          <span className="text-[11px] text-slate-400 font-bold block group-hover:text-indigo-500 transition-colors mb-1">
+                            长期队伍数量
+                          </span>
+                          <span className="text-sm font-black text-indigo-600 group-hover:text-indigo-750 transition-colors duration-200">{ext.longTermTeams} 支</span>
+                        </div>
+                      </div>
+                    ) : (
+                      /* Original Full Layout */
+                      <>
+                        <div 
+                          onClick={() => { setDrilldownPersonMetric('totalOnDuty'); setDrilldownManagementMetric(null); setDrilldownDeviceMetric(null); }}
+                          className={`flex items-center justify-between p-2 rounded-xl transition-all border cursor-pointer group ${drilldownPersonMetric === 'totalOnDuty' ? 'bg-indigo-50/50 border-indigo-200 shadow-3xs ring-1 ring-indigo-100' : 'bg-slate-50/50 border-slate-100/70 hover:bg-indigo-50/30 hover:border-indigo-150'}`}
+                        >
+                          <div className="space-y-0.5">
+                            <span className="text-[10px] text-slate-400 font-bold flex items-center gap-1 group-hover:text-indigo-500 transition-colors">
+                              在岗总人数
+                            </span>
+                            <div className="flex items-baseline">
+                              <span className="text-2xl font-black text-indigo-600 group-hover:text-indigo-750 transition-colors tracking-tight transform group-hover:scale-[1.02] origin-left duration-200">{data.totalOnDuty.toLocaleString()}</span>
+                              <span className="text-xs text-indigo-400 font-semibold ml-1">人</span>
+                            </div>
+                          </div>
+                          <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded text-[10px] font-bold flex items-center animate-pulse">
+                            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-1" />
+                            安全连网
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 text-xs pt-1">
+                          <div 
+                            onClick={() => { setDrilldownPersonMetric('outsourcingCount'); setDrilldownManagementMetric(null); setDrilldownDeviceMetric(null); }}
+                            className={`p-2 rounded-xl border transition-all cursor-pointer group flex flex-col justify-between h-13.5 ${drilldownPersonMetric === 'outsourcingCount' ? 'bg-indigo-50/50 border-indigo-200 shadow-3xs ring-1 ring-indigo-100' : 'bg-slate-50 border-slate-100/60 hover:bg-indigo-50/20 hover:border-indigo-150/70'}`}
+                          >
+                            <span className="text-[9px] text-slate-400 font-bold block group-hover:text-indigo-500 transition-colors">
+                              承包商数量
+                            </span>
+                            <span className="text-xs font-black text-indigo-600 group-hover:text-indigo-750 transition-colors duration-200">{data.outsourcingCount} 家</span>
+                          </div>
+                          
+                          <div 
+                            onClick={() => { setDrilldownPersonMetric('workTickets'); setDrilldownManagementMetric(null); setDrilldownDeviceMetric(null); }}
+                            className={`p-2 rounded-xl border transition-all cursor-pointer group flex flex-col justify-between h-13.5 ${drilldownPersonMetric === 'workTickets' ? 'bg-indigo-50/50 border-indigo-200 shadow-3xs ring-1 ring-indigo-100' : 'bg-slate-50 border-slate-100/60 hover:bg-indigo-50/20 hover:border-indigo-150/70'}`}
+                          >
+                            <span className="text-[9px] text-slate-400 font-bold block group-hover:text-indigo-500 transition-colors">
+                              工作票数量
+                            </span>
+                            <span className="text-xs font-black text-indigo-600 group-hover:text-indigo-750 transition-colors duration-200">{ext.workTickets} 张</span>
+                          </div>
+                          
+                          <div 
+                            onClick={() => { setDrilldownPersonMetric('longTermTeams'); setDrilldownManagementMetric(null); setDrilldownDeviceMetric(null); }}
+                            className={`p-2 rounded-xl border transition-all cursor-pointer group flex flex-col justify-between h-13.5 ${drilldownPersonMetric === 'longTermTeams' ? 'bg-indigo-50/50 border-indigo-200 shadow-3xs ring-1 ring-indigo-100' : 'bg-slate-50 border-slate-100/60 hover:bg-indigo-50/20 hover:border-indigo-150/70'}`}
+                          >
+                            <span className="text-[9px] text-slate-400 font-bold block group-hover:text-indigo-500 transition-colors">
+                              长期队伍数量
+                            </span>
+                            <span className="text-xs font-black text-indigo-600 group-hover:text-indigo-750 transition-colors duration-200">{ext.longTermTeams} 支</span>
+                          </div>
+                          
+                          <div 
+                            onClick={() => { setDrilldownPersonMetric('shortTermTeams'); setDrilldownManagementMetric(null); setDrilldownDeviceMetric(null); }}
+                            className={`p-2 rounded-xl border transition-all cursor-pointer group flex flex-col justify-between h-13.5 ${drilldownPersonMetric === 'shortTermTeams' ? 'bg-indigo-50/50 border-indigo-200 shadow-3xs ring-1 ring-indigo-100' : 'bg-slate-50 border-slate-100/60 hover:bg-indigo-50/20 hover:border-indigo-150/70'}`}
+                          >
+                            <span className="text-[9px] text-slate-400 font-bold block group-hover:text-indigo-500 transition-colors">
+                              短期队伍数量
+                            </span>
+                            <span className="text-xs font-black text-indigo-600 group-hover:text-indigo-750 transition-colors duration-200">{ext.shortTermTeams} 支</span>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
-                  
-                  <div 
-                    onClick={() => { setDrilldownPersonMetric('workTickets'); setDrilldownManagementMetric(null); setDrilldownDeviceMetric(null); }}
-                    className={`p-2 rounded-xl border transition-all cursor-pointer group flex flex-col justify-between h-13.5 ${drilldownPersonMetric === 'workTickets' ? 'bg-indigo-50/50 border-indigo-200 shadow-3xs ring-1 ring-indigo-100' : 'bg-slate-50 border-slate-100/60 hover:bg-indigo-50/20 hover:border-indigo-150/70'}`}
-                  >
-                    <span className="text-[9px] text-slate-400 font-bold block group-hover:text-indigo-500 transition-colors">
-                      工作票数量
-                    </span>
-                    <span className="text-xs font-black text-indigo-600 group-hover:text-indigo-750 transition-colors duration-200">{ext.workTickets} 张</span>
-                  </div>
-                  
-                  <div 
-                    onClick={() => { setDrilldownPersonMetric('longTermTeams'); setDrilldownManagementMetric(null); setDrilldownDeviceMetric(null); }}
-                    className={`p-2 rounded-xl border transition-all cursor-pointer group flex flex-col justify-between h-13.5 ${drilldownPersonMetric === 'longTermTeams' ? 'bg-indigo-50/50 border-indigo-200 shadow-3xs ring-1 ring-indigo-100' : 'bg-slate-50 border-slate-100/60 hover:bg-indigo-50/20 hover:border-indigo-150/70'}`}
-                  >
-                    <span className="text-[9px] text-slate-400 font-bold block group-hover:text-indigo-500 transition-colors">
-                      长期队伍数量
-                    </span>
-                    <span className="text-xs font-black text-indigo-600 group-hover:text-indigo-750 transition-colors duration-200">{ext.longTermTeams} 支</span>
-                  </div>
-                  
-                  <div 
-                    onClick={() => { setDrilldownPersonMetric('shortTermTeams'); setDrilldownManagementMetric(null); setDrilldownDeviceMetric(null); }}
-                    className={`p-2 rounded-xl border transition-all cursor-pointer group flex flex-col justify-between h-13.5 ${drilldownPersonMetric === 'shortTermTeams' ? 'bg-indigo-50/50 border-indigo-200 shadow-3xs ring-1 ring-indigo-100' : 'bg-slate-50 border-slate-100/60 hover:bg-indigo-50/20 hover:border-indigo-150/70'}`}
-                  >
-                    <span className="text-[9px] text-slate-400 font-bold block group-hover:text-indigo-500 transition-colors">
-                      短期队伍数量
-                    </span>
-                    <span className="text-xs font-black text-indigo-600 group-hover:text-indigo-750 transition-colors duration-200">{ext.shortTermTeams} 支</span>
-                  </div>
-                </div>
-              </div>
 
               {/* SECTION 2: 设备的本质安全 */}
               <div className="space-y-3.5 pt-4" id="device-essential-section">
@@ -1167,133 +1166,177 @@ export default function DiscoveryPage() {
                   )}
                 </h3>
                 
-                {/* 3 Columns for main defect counters with styled icons */}
-                <div className="grid grid-cols-3 gap-2">
-                  {/* 缺陷总数 */}
-                  <div 
-                    onClick={() => { setDrilldownDeviceMetric('totalDefects'); setDrilldownPersonMetric(null); setDrilldownManagementMetric(null); }}
-                    className={`p-2 rounded-xl border transition-all cursor-pointer group flex flex-col items-center justify-between text-center ${drilldownDeviceMetric === 'totalDefects' ? 'bg-rose-50/50 border-rose-250 shadow-3xs ring-1 ring-rose-150' : 'bg-slate-50/80 border-slate-100/75 hover:bg-rose-50/20 hover:border-rose-150/50'}`}
-                  >
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1.5 shadow-sm transition-all duration-250 ${drilldownDeviceMetric === 'totalDefects' ? 'bg-rose-200 text-rose-700 scale-105' : 'bg-slate-100 text-slate-500'}`}>
-                      <Wrench className="w-4 h-4" />
+                {leftPanelCollapsed ? (
+                  /* Collapsed layout (identical to screenshot structure) */
+                  <div className="space-y-3 pt-1">
+                    {/* 缺陷总数 */}
+                    <div 
+                      onClick={() => { setDrilldownDeviceMetric('totalDefects'); setDrilldownPersonMetric(null); setDrilldownManagementMetric(null); }}
+                      className={`p-3 rounded-2xl border transition-all cursor-pointer flex flex-col items-center justify-center text-center py-4 h-32 ${drilldownDeviceMetric === 'totalDefects' ? 'bg-slate-100 border-rose-250 shadow-3xs ring-1 ring-rose-150' : 'bg-slate-50/50 border-slate-100/70 hover:bg-slate-100 hover:border-slate-200'}`}
+                    >
+                      <div className="w-9 h-9 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center mb-1.5 shadow-sm">
+                        <Wrench className="w-4 h-4" />
+                      </div>
+                      <span className="text-[11px] text-slate-400 font-bold mb-1">缺陷总数</span>
+                      <span className="text-base font-black text-rose-600 font-mono">{data.majorDefects + data.minorDefects}</span>
                     </div>
-                    <span className="text-[9.5px] text-slate-400 group-hover:text-rose-500 font-bold block leading-tight mb-1 transition-colors">缺陷总数</span>
-                    <span className="text-base font-black text-rose-600 group-hover:text-rose-750 transition-colors font-mono">{data.majorDefects + data.minorDefects}</span>
-                  </div>
 
-                  {/* 一类重大 */}
-                  <div 
-                    onClick={() => { setDrilldownDeviceMetric('majorDefects'); setDrilldownPersonMetric(null); setDrilldownManagementMetric(null); }}
-                    className={`p-2 rounded-xl border transition-all cursor-pointer group flex flex-col items-center justify-between text-center ${drilldownDeviceMetric === 'majorDefects' ? 'bg-rose-50/60 border-rose-250 shadow-3xs ring-1 ring-rose-150' : 'bg-rose-50/40 border-rose-100/50 hover:bg-rose-50/65 hover:border-rose-200'}`}
-                  >
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1.5 shadow-sm animate-pulse transition-all duration-250 ${drilldownDeviceMetric === 'majorDefects' ? 'bg-red-200 text-red-700 scale-105' : 'bg-rose-100/60 text-red-600'}`}>
-                      <ShieldAlert className="w-4 h-4" />
+                    {/* 一类重大 */}
+                    <div 
+                      onClick={() => { setDrilldownDeviceMetric('majorDefects'); setDrilldownPersonMetric(null); setDrilldownManagementMetric(null); }}
+                      className={`p-3 rounded-2xl border transition-all cursor-pointer flex flex-col items-center justify-center text-center py-4 h-32 ${drilldownDeviceMetric === 'majorDefects' ? 'bg-rose-50/60 border-rose-250 shadow-3xs ring-1 ring-rose-150 animate-pulse' : 'bg-red-50/20 border-red-50 hover:bg-rose-50 hover:border-rose-150'}`}
+                    >
+                      <div className="w-9 h-9 rounded-full bg-rose-100 text-red-650 flex items-center justify-center mb-1.5 shadow-sm">
+                        <ShieldAlert className="w-4 h-4 animate-pulse" />
+                      </div>
+                      <span className="text-[11px] text-rose-500 font-bold mb-1">一类重大</span>
+                      <span className="text-base font-black text-red-600 font-mono">{data.majorDefects}</span>
                     </div>
-                    <span className="text-[9.5px] text-rose-500 group-hover:text-red-700 font-black block leading-tight mb-1 transition-colors">一类重大</span>
-                    <span className="text-base font-black text-red-600 group-hover:text-red-850 transition-colors font-mono">{data.majorDefects}</span>
-                  </div>
 
-                  {/* 二类缺陷 */}
-                  <div 
-                    onClick={() => { setDrilldownDeviceMetric('minorDefects'); setDrilldownPersonMetric(null); setDrilldownManagementMetric(null); }}
-                    className={`p-2 rounded-xl border transition-all cursor-pointer group flex flex-col items-center justify-between text-center ${drilldownDeviceMetric === 'minorDefects' ? 'bg-amber-50 border-amber-200 shadow-3xs ring-1 ring-amber-100' : 'bg-amber-50/30 border-amber-100 hover:bg-amber-50 hover:border-amber-150/70'}`}
-                  >
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1.5 shadow-sm transition-all duration-250 ${drilldownDeviceMetric === 'minorDefects' ? 'bg-amber-150 text-amber-700 scale-105' : 'bg-amber-100/60 text-amber-600'}`}>
-                      <AlertTriangle className="w-4 h-4" />
+                    {/* 二类缺陷 */}
+                    <div 
+                      onClick={() => { setDrilldownDeviceMetric('minorDefects'); setDrilldownPersonMetric(null); setDrilldownManagementMetric(null); }}
+                      className={`p-3 rounded-2xl border transition-all cursor-pointer flex flex-col items-center justify-center text-center py-4 h-32 ${drilldownDeviceMetric === 'minorDefects' ? 'bg-amber-50 border-amber-250 shadow-3xs ring-1 ring-amber-150' : 'bg-amber-50/20 border-amber-50 hover:bg-amber-50 hover:border-amber-150'}`}
+                    >
+                      <div className="w-9 h-9 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mb-1.5 shadow-sm">
+                        <AlertTriangle className="w-4 h-4" />
+                      </div>
+                      <span className="text-[11px] text-amber-600 font-bold mb-1">二类缺陷</span>
+                      <span className="text-base font-black text-amber-700 font-mono">{data.minorDefects}</span>
                     </div>
-                    <span className="text-[9.5px] text-amber-600 group-hover:text-amber-750 font-black block leading-tight mb-1 transition-colors">二类缺陷</span>
-                    <span className="text-base font-black text-amber-700 group-hover:text-amber-850 transition-colors font-mono">{data.minorDefects}</span>
                   </div>
-                </div>
+                ) : (
+                  /* Original Full Layout */
+                  <>
+                    {/* 3 Columns for main defect counters with styled icons */}
+                    <div className="grid grid-cols-3 gap-2">
+                      {/* 缺陷总数 */}
+                      <div 
+                        onClick={() => { setDrilldownDeviceMetric('totalDefects'); setDrilldownPersonMetric(null); setDrilldownManagementMetric(null); }}
+                        className={`p-2 rounded-xl border transition-all cursor-pointer group flex flex-col items-center justify-between text-center ${drilldownDeviceMetric === 'totalDefects' ? 'bg-rose-50/50 border-rose-250 shadow-3xs ring-1 ring-rose-150' : 'bg-slate-50/80 border-slate-100/75 hover:bg-rose-50/20 hover:border-rose-150/50'}`}
+                      >
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1.5 shadow-sm transition-all duration-250 ${drilldownDeviceMetric === 'totalDefects' ? 'bg-rose-200 text-rose-700 scale-105' : 'bg-slate-100 text-slate-500'}`}>
+                          <Wrench className="w-4 h-4" />
+                        </div>
+                        <span className="text-[9.5px] text-slate-400 group-hover:text-rose-500 font-bold block leading-tight mb-1 transition-colors">缺陷总数</span>
+                        <span className="text-base font-black text-rose-600 group-hover:text-rose-750 transition-colors font-mono">{data.majorDefects + data.minorDefects}</span>
+                      </div>
 
-                {/* 2 Columns for yesterday and rate metrics */}
-                <div className="grid grid-cols-2 gap-2.5 pt-1.5">
-                  {/* 昨日新增 */}
-                  <div 
-                    onClick={() => { setDrilldownDeviceMetric('yesterdayNewDefects'); setDrilldownPersonMetric(null); setDrilldownManagementMetric(null); }}
-                    className={`p-2.5 rounded-xl border transition-all cursor-pointer group flex items-center space-x-2.5 h-13.5 ${drilldownDeviceMetric === 'yesterdayNewDefects' ? 'bg-sky-50 border-sky-200 shadow-3xs ring-1 ring-sky-100' : 'bg-sky-50/40 border-sky-100/60 hover:bg-sky-50/70 hover:border-sky-150'}`}
-                  >
-                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-xs transition-all duration-250 ${drilldownDeviceMetric === 'yesterdayNewDefects' ? 'bg-sky-200 text-sky-700 scale-105' : 'bg-sky-100/60 text-sky-600'}`}>
-                      <Plus className="w-4 h-4 stroke-[3]" />
-                    </div>
-                    <div>
-                      <span className="text-[9.5px] text-slate-400 group-hover:text-sky-600 font-bold block mb-0.5 transition-colors">昨日新增</span>
-                      <div className="flex items-baseline space-x-0.5">
-                        <span className="text-sm font-black text-sky-600 group-hover:text-sky-750 font-mono">+{ext.yesterdayNewDefects}</span>
-                        <span className="text-[8px] text-slate-400 font-bold">项</span>
+                      {/* 一类重大 */}
+                      <div 
+                        onClick={() => { setDrilldownDeviceMetric('majorDefects'); setDrilldownPersonMetric(null); setDrilldownManagementMetric(null); }}
+                        className={`p-2 rounded-xl border transition-all cursor-pointer group flex flex-col items-center justify-between text-center ${drilldownDeviceMetric === 'majorDefects' ? 'bg-rose-50/60 border-rose-250 shadow-3xs ring-1 ring-rose-150' : 'bg-rose-50/40 border-rose-100/50 hover:bg-rose-50/65 hover:border-rose-200'}`}
+                      >
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1.5 shadow-sm animate-pulse transition-all duration-250 ${drilldownDeviceMetric === 'majorDefects' ? 'bg-red-200 text-red-700 scale-105' : 'bg-rose-100/60 text-red-600'}`}>
+                          <ShieldAlert className="w-4 h-4" />
+                        </div>
+                        <span className="text-[9.5px] text-rose-500 group-hover:text-red-700 font-black block leading-tight mb-1 transition-colors">一类重大</span>
+                        <span className="text-base font-black text-red-600 group-hover:text-red-850 transition-colors font-mono">{data.majorDefects}</span>
+                      </div>
+
+                      {/* 二类缺陷 */}
+                      <div 
+                        onClick={() => { setDrilldownDeviceMetric('minorDefects'); setDrilldownPersonMetric(null); setDrilldownManagementMetric(null); }}
+                        className={`p-2 rounded-xl border transition-all cursor-pointer group flex flex-col items-center justify-between text-center ${drilldownDeviceMetric === 'minorDefects' ? 'bg-amber-50 border-amber-200 shadow-3xs ring-1 ring-amber-100' : 'bg-amber-50/30 border-amber-100 hover:bg-amber-50 hover:border-amber-150/70'}`}
+                      >
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1.5 shadow-sm transition-all duration-250 ${drilldownDeviceMetric === 'minorDefects' ? 'bg-amber-150 text-amber-700 scale-105' : 'bg-amber-100/60 text-amber-600'}`}>
+                          <AlertTriangle className="w-4 h-4" />
+                        </div>
+                        <span className="text-[9.5px] text-amber-600 group-hover:text-amber-750 font-black block leading-tight mb-1 transition-colors">二类缺陷</span>
+                        <span className="text-base font-black text-amber-700 group-hover:text-amber-850 transition-colors font-mono">{data.minorDefects}</span>
                       </div>
                     </div>
-                  </div>
 
-                  {/* 消缺率 */}
-                  <div 
-                    onClick={() => { setDrilldownDeviceMetric('defectResolutionRate'); setDrilldownPersonMetric(null); setDrilldownManagementMetric(null); }}
-                    className={`p-2.5 rounded-xl border transition-all cursor-pointer group flex items-center space-x-2.5 h-13.5 ${drilldownDeviceMetric === 'defectResolutionRate' ? 'bg-emerald-50 border-emerald-200 shadow-3xs ring-1 ring-emerald-100' : 'bg-emerald-50/40 border-emerald-100/60 hover:bg-emerald-50/70 hover:border-emerald-150'}`}
-                  >
-                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-xs transition-all duration-250 ${drilldownDeviceMetric === 'defectResolutionRate' ? 'bg-emerald-200 text-emerald-700 scale-105' : 'bg-emerald-100/60 text-emerald-600'}`}>
-                      <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
-                    </div>
-                    <div>
-                      <span className="text-[9.5px] text-slate-400 group-hover:text-emerald-600 font-bold block mb-0.5 transition-colors">消缺治理率</span>
-                      <span className="text-sm font-black text-emerald-600 group-hover:text-emerald-700 font-mono">{data.defectResolutionRate}%</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 智能设备占比 */}
-                <div className="space-y-1.5 pt-2 border-t border-slate-100" id="smart-device-ratio">
-                  <h4 
-                    onClick={() => { setDrilldownDeviceMetric('all_smart_devices'); setDrilldownPersonMetric(null); setDrilldownManagementMetric(null); }}
-                    className={`text-[9.5px] font-black uppercase tracking-wider flex items-center justify-between cursor-pointer transition-colors group/header ${drilldownDeviceMetric === 'all_smart_devices' ? 'text-indigo-600' : 'text-slate-400 hover:text-indigo-600'}`}
-                    title="点击查看智能设备本质安全综合全景图"
-                  >
-                    <span className="group-hover/header:underline group-hover/header:decoration-dashed group-hover/header:underline-offset-4 flex items-center">
-                      <Cpu className="w-3.5 h-3.5 mr-1 text-indigo-500" />
-                      智能安全设备穿透分配比
-                    </span>
-                    <span className="text-[7.5px] px-1.5 py-0.2 bg-indigo-50 text-indigo-600 rounded font-black border border-indigo-100/60 group-hover/header:bg-indigo-100">全景对标 &raquo;</span>
-                  </h4>
-                  
-                  <div className="space-y-1.5">
-                    {ext.smartDevices.map((dev, idx) => {
-                      const metricMap: Record<string, string> = {
-                        '安全帽': 'smartHelmet',
-                        '安全带': 'smartBelt',
-                        '训操机器人': 'smartRobot'
-                      };
-                      const metricKey = metricMap[dev.type] || 'smartHelmet';
-                      const isSelected = drilldownDeviceMetric === metricKey;
-                      
-                      return (
-                        <div 
-                          key={idx} 
-                          onClick={() => { setDrilldownDeviceMetric(metricKey); setDrilldownPersonMetric(null); setDrilldownManagementMetric(null); }}
-                          className={`space-y-0.5 p-1 rounded-lg transition-all cursor-pointer group/item border ${isSelected ? 'bg-indigo-50/50 border-indigo-200/80 shadow-2xs' : 'border-transparent hover:bg-slate-50'}`}
-                        >
-                          <div className="flex justify-between text-[10px] font-bold text-slate-600">
-                            <span className="flex items-center group-hover/item:text-indigo-600 transition-colors">
-                              <span 
-                                className="w-1.5 h-1.5 rounded-full mr-1.5 animate-pulse" 
-                                style={{ backgroundColor: dev.type === '安全帽' ? '#4F46E5' : dev.type === '安全带' ? '#06B6D4' : '#10B981' }} 
-                              />
-                              {dev.type}
-                            </span>
-                            <span className={`font-mono ${isSelected ? 'text-indigo-600 font-extrabold' : 'text-slate-500'}`}>{dev.value}%</span>
-                          </div>
-                          <div className="w-full bg-slate-100 h-1 rounded-full overflow-hidden">
-                            <div 
-                              className="h-full rounded-full transition-all duration-500" 
-                              style={{ 
-                                width: `${dev.value}%`, 
-                                backgroundColor: dev.type === '安全帽' ? '#4f46e5' : dev.type === '安全带' ? '#06b6d4' : '#10b981' 
-                              }} 
-                            />
+                    {/* 2 Columns for yesterday and rate metrics */}
+                    <div className="grid grid-cols-2 gap-2.5 pt-1.5">
+                      {/* 昨日新增 */}
+                      <div 
+                        onClick={() => { setDrilldownDeviceMetric('yesterdayNewDefects'); setDrilldownPersonMetric(null); setDrilldownManagementMetric(null); }}
+                        className={`p-2.5 rounded-xl border transition-all cursor-pointer group flex items-center space-x-2.5 h-13.5 ${drilldownDeviceMetric === 'yesterdayNewDefects' ? 'bg-sky-50 border-sky-200 shadow-3xs ring-1 ring-sky-100' : 'bg-sky-50/40 border-sky-100/60 hover:bg-sky-50/70 hover:border-sky-150'}`}
+                      >
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-xs transition-all duration-250 ${drilldownDeviceMetric === 'yesterdayNewDefects' ? 'bg-sky-200 text-sky-700 scale-105' : 'bg-sky-100/60 text-sky-600'}`}>
+                          <Plus className="w-4 h-4 stroke-[3]" />
+                        </div>
+                        <div>
+                          <span className="text-[9.5px] text-slate-400 group-hover:text-sky-600 font-bold block mb-0.5 transition-colors">昨日新增</span>
+                          <div className="flex items-baseline space-x-0.5">
+                            <span className="text-sm font-black text-sky-600 group-hover:text-sky-750 font-mono">+{ext.yesterdayNewDefects}</span>
+                            <span className="text-[8px] text-slate-400 font-bold">项</span>
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                </div>
+                      </div>
+
+                      {/* 消缺率 */}
+                      <div 
+                        onClick={() => { setDrilldownDeviceMetric('defectResolutionRate'); setDrilldownPersonMetric(null); setDrilldownManagementMetric(null); }}
+                        className={`p-2.5 rounded-xl border transition-all cursor-pointer group flex items-center space-x-2.5 h-13.5 ${drilldownDeviceMetric === 'defectResolutionRate' ? 'bg-emerald-50 border-emerald-200 shadow-3xs ring-1 ring-emerald-100' : 'bg-emerald-50/40 border-emerald-100/60 hover:bg-emerald-50/70 hover:border-emerald-150'}`}
+                      >
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-xs transition-all duration-250 ${drilldownDeviceMetric === 'defectResolutionRate' ? 'bg-emerald-200 text-emerald-700 scale-105' : 'bg-emerald-100/60 text-emerald-600'}`}>
+                          <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
+                        </div>
+                        <div>
+                          <span className="text-[9.5px] text-slate-400 group-hover:text-emerald-600 font-bold block mb-0.5 transition-colors">消缺治理率</span>
+                          <span className="text-sm font-black text-emerald-600 group-hover:text-emerald-700 font-mono">{data.defectResolutionRate}%</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 智能设备占比 */}
+                    <div className="space-y-1.5 pt-2 border-t border-slate-100" id="smart-device-ratio">
+                      <h4 
+                        onClick={() => { setDrilldownDeviceMetric('all_smart_devices'); setDrilldownPersonMetric(null); setDrilldownManagementMetric(null); }}
+                        className={`text-[9.5px] font-black uppercase tracking-wider flex items-center justify-between cursor-pointer transition-colors group/header ${drilldownDeviceMetric === 'all_smart_devices' ? 'text-indigo-600' : 'text-slate-400 hover:text-indigo-600'}`}
+                        title="点击查看智能设备本质安全综合全景图"
+                      >
+                        <span className="group-hover/header:underline group-hover/header:decoration-dashed group-hover/header:underline-offset-4 flex items-center">
+                          <Cpu className="w-3.5 h-3.5 mr-1 text-indigo-500" />
+                          智能安全设备穿透分配比
+                        </span>
+                        <span className="text-[7.5px] px-1.5 py-0.2 bg-indigo-50 text-indigo-600 rounded font-black border border-indigo-100/60 group-hover/header:bg-indigo-100">全景对标 &raquo;</span>
+                      </h4>
+                      
+                      <div className="space-y-1.5">
+                        {ext.smartDevices.map((dev, idx) => {
+                          const metricMap: Record<string, string> = {
+                            '安全帽': 'smartHelmet',
+                            '安全带': 'smartBelt',
+                            '训操机器人': 'smartRobot'
+                          };
+                          const metricKey = metricMap[dev.type] || 'smartHelmet';
+                          const isSelected = drilldownDeviceMetric === metricKey;
+                          
+                          return (
+                            <div 
+                              key={idx} 
+                              onClick={() => { setDrilldownDeviceMetric(metricKey); setDrilldownPersonMetric(null); setDrilldownManagementMetric(null); }}
+                              className={`space-y-0.5 p-1 rounded-lg transition-all cursor-pointer group/item border ${isSelected ? 'bg-indigo-50/50 border-indigo-200/80 shadow-2xs' : 'border-transparent hover:bg-slate-50'}`}
+                            >
+                              <div className="flex justify-between text-[10px] font-bold text-slate-600">
+                                <span className="flex items-center group-hover/item:text-indigo-600 transition-colors">
+                                  <span 
+                                    className="w-1.5 h-1.5 rounded-full mr-1.5 animate-pulse" 
+                                    style={{ backgroundColor: dev.type === '安全帽' ? '#4F46E5' : dev.type === '安全带' ? '#06B6D4' : '#10B981' }} 
+                                  />
+                                  {dev.type}
+                                </span>
+                                <span className={`font-mono ${isSelected ? 'text-indigo-600 font-extrabold' : 'text-slate-500'}`}>{dev.value}%</span>
+                              </div>
+                              <div className="w-full bg-slate-100 h-1 rounded-full overflow-hidden">
+                                <div 
+                                  className="h-full rounded-full transition-all duration-500" 
+                                  style={{ 
+                                    width: `${dev.value}%`, 
+                                    backgroundColor: dev.type === '安全帽' ? '#4f46e5' : dev.type === '安全带' ? '#06b6d4' : '#10b981' 
+                                  }} 
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* SECTION 3: 环境的本质安全 */}
@@ -1303,50 +1346,75 @@ export default function DiscoveryPage() {
                   环境的本质安全
                 </h3>
 
-                {/* AI流式风险提示终端 */}
-                <div className="bg-[#050B14] p-2.5 rounded-xl border border-slate-800 text-slate-300 font-mono text-[9px] space-y-1.5 relative overflow-hidden" id="ai-sentry-terminal">
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-1.5 text-[8px] text-slate-500 font-bold">
-                    <span className="flex items-center text-teal-400">
-                      <span className="w-1.5 h-1.5 bg-teal-400 rounded-full mr-1 animate-ping" />
-                      AI_本质安全监视终端
-                    </span>
-                    <span>ACTIVE</span>
+                {leftPanelCollapsed ? (
+                  /* Collapsed layout (identical to screenshot structure) */
+                  <div className="space-y-2 pt-1">
+                    {ext.weatherDetails.split(' | ').map((plantW, idx) => {
+                      const parts = plantW.split(': ');
+                      const plantName = parts[0] || '';
+                      const weatherInfo = parts[1] || '';
+                      return (
+                        <div key={idx} className="bg-slate-50/70 border border-slate-100/60 rounded-xl px-4 py-2.5 text-xs font-black text-slate-700/80 flex items-center justify-between shadow-3xs hover:bg-slate-100/80 transition-colors">
+                          <span>{plantName}</span>
+                          <span className="text-slate-500 font-bold">{weatherInfo}</span>
+                        </div>
+                      );
+                    })}
                   </div>
-                  <div className="space-y-1 max-h-[85px] overflow-y-auto scrollbar-none">
-                    {ext.aiStreams.map((log, lIdx) => (
-                      <div key={lIdx} className="text-teal-350/90 border-l border-teal-500/30 pl-1.5 py-0.5 leading-tight">
-                        {log}
+                ) : (
+                  /* Original Full Layout */
+                  <>
+                    {/* AI流式风险提示终端 */}
+                    <div className="bg-[#050B14] p-2.5 rounded-xl border border-slate-800 text-slate-300 font-mono text-[9px] space-y-1.5 relative overflow-hidden" id="ai-sentry-terminal">
+                      <div className="flex items-center justify-between border-b border-slate-800 pb-1.5 text-[8px] text-slate-500 font-bold">
+                        <span className="flex items-center text-teal-400">
+                          <span className="w-1.5 h-1.5 bg-teal-400 rounded-full mr-1 animate-ping" />
+                          AI_本质安全监视终端
+                        </span>
+                        <span>ACTIVE</span>
                       </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 气象局预告 */}
-                <div className="p-2.5 bg-amber-50 rounded-xl border border-amber-100 text-[10px] text-amber-800 space-y-0.5">
-                  <span className="font-black text-[9px] uppercase tracking-wider block text-amber-900">气象局官方气象预警联防</span>
-                  <p className="font-semibold leading-relaxed">{ext.weatherForecast}</p>
-                </div>
-
-                {/* 各电厂气象一览 */}
-                <div className="space-y-1.5 pt-1.5 border-t border-slate-100">
-                  <span className="text-[9.5px] text-slate-400 font-black tracking-wider block">各电厂天气实测一览</span>
-                  <div className="text-[9.5px] text-slate-600 space-y-1 font-bold">
-                    {ext.weatherDetails.split(' | ').map((plantW, idx) => (
-                      <div key={idx} className="flex justify-between p-1 px-1.5 bg-slate-50 rounded border border-slate-100/50">
-                        <span>{plantW.split(': ')[0]}</span>
-                        <span className="text-slate-500">{plantW.split(': ')[1]}</span>
+                      <div className="space-y-1 max-h-[85px] overflow-y-auto scrollbar-none">
+                        {ext.aiStreams.map((log, lIdx) => (
+                          <div key={lIdx} className="text-teal-350/90 border-l border-teal-500/30 pl-1.5 py-0.5 leading-tight">
+                            {log}
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </div>
+                    </div>
+
+                    {/* 气象局预告 */}
+                    <div className="p-2.5 bg-amber-50 rounded-xl border border-amber-100 text-[10px] text-amber-800 space-y-0.5">
+                      <span className="font-black text-[9px] uppercase tracking-wider block text-amber-900">气象局官方气象预警联防</span>
+                      <p className="font-semibold leading-relaxed">{ext.weatherForecast}</p>
+                    </div>
+
+                    {/* 各电厂气象一览 */}
+                    <div className="space-y-1.5 pt-1.5 border-t border-slate-100">
+                      <span className="text-[9.5px] text-slate-400 font-black tracking-wider block">各电厂天气实测一览</span>
+                      <div className="text-[9.5px] text-slate-600 space-y-1 font-bold">
+                        {ext.weatherDetails.split(' | ').map((plantW, idx) => (
+                          <div key={idx} className="flex justify-between p-1 px-1.5 bg-slate-50 rounded border border-slate-100/50">
+                            <span>{plantW.split(': ')[0]}</span>
+                            <span className="text-slate-500">{plantW.split(': ')[1]}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div> {/* Close SECTION 3 */}
             </div> {/* Close intrinsic-safety-card-body */}
           </div> {/* Close intrinsic-safety-composite-card */}
 
             </div>
 
-            {/* ================= CENTER COLUMN: AI安全日报 (xl:col-span-6) ================= */}
-            <div className="xl:col-span-6 h-full overflow-y-auto pr-1 scrollbar-thin flex flex-col pb-6" id="center-daily-report-column">
+            {/* ================= CENTER COLUMN: AI安全日报 (xl:col-span-6 / xl:col-span-7) ================= */}
+            <div 
+              className={`h-full overflow-y-auto pr-1 scrollbar-thin flex flex-col pb-6 transition-all duration-500 ease-in-out ${
+                leftPanelCollapsed ? 'xl:col-span-7' : 'xl:col-span-6'
+              }`} 
+              id="center-daily-report-column"
+            >
               
               <div className="bg-white text-slate-800 border border-indigo-100/90 rounded-2xl shadow-sm p-5.5 space-y-5 flex flex-col relative overflow-hidden flex-1 justify-between" id="ai-daily-report-center">
                 
@@ -3024,6 +3092,7 @@ export default function DiscoveryPage() {
                         setDrilldownPersonMetric(null);
                         setDrilldownDeviceMetric(null);
                         setSelectedSupervisionTicket(null);
+                        setLeftPanelCollapsed(true);
                       }}
                       className="bg-[#f4f7fc]/70 border border-[#e4ecf7] rounded-xl py-3 px-1.5 flex flex-col justify-center items-center cursor-pointer hover:bg-[#e8effd] hover:border-blue-300 transition-all shadow-3xs group"
                       title="点击调用作业实时智能监管指挥舱"
@@ -3038,6 +3107,7 @@ export default function DiscoveryPage() {
                         setDrilldownPersonMetric(null);
                         setDrilldownDeviceMetric(null);
                         setSelectedSupervisionTicket(null);
+                        setLeftPanelCollapsed(true);
                       }}
                       className="bg-rose-50/40 border border-rose-100/60 rounded-xl py-3 px-1.5 flex flex-col justify-center items-center cursor-pointer hover:bg-rose-50 hover:border-rose-300 transition-all shadow-3xs group"
                       title="点击调用重大风险智能监管流"
@@ -3052,6 +3122,7 @@ export default function DiscoveryPage() {
                         setDrilldownPersonMetric(null);
                         setDrilldownDeviceMetric(null);
                         setSelectedSupervisionTicket(null);
+                        setLeftPanelCollapsed(true);
                       }}
                       className="bg-amber-50/40 border border-amber-100/60 rounded-xl py-3 px-1.5 flex flex-col justify-center items-center cursor-pointer hover:bg-amber-50 hover:border-amber-300 transition-all shadow-3xs group"
                       title="点击调用较大风险智能监管流"
